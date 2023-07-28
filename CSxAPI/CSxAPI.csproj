@@ -1,0 +1,51 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <Version>11.5.2.0-SNAPSHOT1</Version>
+        <Authors>Ben Hutchison</Authors>
+        <Copyright>© 2023 $(Authors)</Copyright>
+        <Company>$(Authors)</Company>
+        <PackageId>CSxAPI</PackageId>
+        <Title>CSxAPI</Title>
+        <AssemblyTitle>C# xAPI for Cisco collaboration endpoints</AssemblyTitle>
+        <Product>$(Title)</Product>
+        <Nullable>enable</Nullable>
+        <LangVersion>latest</LangVersion>
+        <ImplicitUsings>true</ImplicitUsings>
+        <NoWarn>VSTHRD200</NoWarn>
+        <RootNamespace>CSxAPI</RootNamespace>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <Description>$(AssemblyTitle)</Description>
+        <PackageProjectUrl>https://github.com/Aldaviva/CSxAPI</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/Aldaviva/CSxAPI.git</RepositoryUrl>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <PackageTags>cisco xapi roomos ce9 collaboration endpoint video conference room-system webex room telepresence codec teleconference</PackageTags>
+        <PackageIcon>icon.jpg</PackageIcon>
+        <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <IncludeSource>true</IncludeSource>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <PackageReadmeFile>Readme.md</PackageReadmeFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="StreamJsonRpc" Version="2.15.29" />
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EditorConfigFiles Remove="API\Generated\.editorconfig" />
+        <None Include="icon.jpg" Pack="true" PackagePath="\" />
+        <None Include="..\Readme.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true' or '$(Configuration)' == 'Release'">
+        <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    </PropertyGroup>
+
+</Project>
