@@ -6,13 +6,13 @@ namespace Tests;
 public class ToTimeZoneInfoTest {
 
     [Theory]
-    [MemberData(nameof(AllCiscoTimeZones))]
+    [MemberData(nameof(allCiscoTimeZones))]
     public void HandlesEveryCiscoTimeZone(ConfigurationTimeZone ciscoTimeZone) {
         TimeZoneInfo actual = ciscoTimeZone.ToTimeZoneInfo();
         actual.Should().NotBeNull();
     }
 
-    public static IEnumerable<object[]> AllCiscoTimeZones => Enum.GetValues<ConfigurationTimeZone>().Select(zone => new object[] { zone });
+    public static IEnumerable<object[]> allCiscoTimeZones => Enum.GetValues<ConfigurationTimeZone>().Select(zone => new object[] { zone });
 
     [Theory]
     [InlineData("America/Los_Angeles", ConfigurationTimeZone.America_Los_Angeles)]

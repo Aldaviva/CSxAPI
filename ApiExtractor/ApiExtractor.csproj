@@ -17,7 +17,7 @@
     <ItemGroup>
         <PackageReference Include="jaytwo.FluentUri" Version="0.1.4" />
         <PackageReference Include="morelinq" Version="4.2.0" />
-        <PackageReference Include="PdfPig" Version="0.1.7" />
+        <PackageReference Include="PdfPig" Version="0.1.8" />
     </ItemGroup>
 
 </Project>

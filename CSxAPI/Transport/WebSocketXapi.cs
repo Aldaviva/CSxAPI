@@ -1,11 +1,12 @@
-﻿using System.Diagnostics;
+﻿using CSxAPI.API.Exceptions;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using StreamJsonRpc;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.WebSockets;
 using System.Text;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using StreamJsonRpc;
 
 namespace CSxAPI.Transport;
 
@@ -143,10 +144,9 @@ public class WebSocketXapi: IWebSocketXapi {
     }
 
     private static string GetCommandMethod(IEnumerable<string> path) {
-        string method = string.Join("/", path
+        return string.Join("/", path
             .SkipWhile((s, i) => i == 0 && (string.Equals(s, "Command", StringComparison.InvariantCultureIgnoreCase) || string.Equals(s, "xCommand", StringComparison.InvariantCultureIgnoreCase)))
             .Prepend("xCommand"));
-        return method;
     }
 
     private static IEnumerable<string> GetPath(IEnumerable<string> path) {
@@ -169,17 +169,41 @@ public class WebSocketXapi: IWebSocketXapi {
 
     /// <inheritdoc />
     public async Task<T> GetConfigurationOrStatus<T>(string[] path) {
-        return await Get<T>(path).ConfigureAwait(false);
+        try {
+            return await Get<T>(path).ConfigureAwait(false);
+        } catch (RemoteMethodNotFoundException e) {
+            throw new CommandNotFoundException(Hostname, path, e);
+        }
     }
 
     /// <inheritdoc />
     public async Task SetConfiguration(string[] path, object newValue) {
-        await Set(path, newValue).ConfigureAwait(false);
+        try {
+            await Set(path, newValue).ConfigureAwait(false);
+        } catch (RemoteMethodNotFoundException e) {
+            throw new CommandNotFoundException(Hostname, path, e);
+        } catch (RemoteInvocationException e) {
+            if ((e.ErrorData as JObject)?.GetValue("Cause")?.Value<int>() == 27) {
+                throw new IllegalArgumentException(Hostname, path, newValue, e);
+            }
+
+            throw;
+        }
     }
 
     /// <inheritdoc />
-    public async Task<IDictionary<string, object>> CallMethod(IEnumerable<string> path, IDictionary<string, object?>? parameters) {
-        return await Command<IDictionary<string, object>>(path, parameters?.Compact()).ConfigureAwait(false);
+    public async Task<IDictionary<string, object>> CallMethod(string[] path, IDictionary<string, object?>? parameters) {
+        try {
+            return await Command<IDictionary<string, object>>(path, parameters?.Compact()).ConfigureAwait(false);
+        } catch (RemoteMethodNotFoundException e) {
+            throw new CommandNotFoundException(Hostname, path, e);
+        } catch (RemoteInvocationException e) {
+            if ((e.ErrorData as JObject)?.GetValue("Cause")?.Value<int>() == 27) {
+                throw new IllegalArgumentException(Hostname, path, parameters, e);
+            }
+
+            throw;
+        }
     }
 
 }

@@ -20,7 +20,7 @@ public static class PdfReader {
     private const int DPI = 72;
 
     private static readonly ISet<string> XSTATUS_DESCRIPTION_VALUE_SPACE_HEADING_WORDS = new HashSet<string> { "Value", "space", "of", "the", "result", "returned:" };
-    private static readonly IColor       PRODUCT_NAME_COLOR                            = new RGBColor(0.035m, 0.376m, 0.439m);
+    private static readonly IColor       PRODUCT_NAME_COLOR                            = new RGBColor(0.035, 0.376, 0.439);
 
     public static void Main() {
         // Console.WriteLine(string.Join("\n", guessEnumRange("Microphone.1/../Microphone.4/Line.1/Line.2/HDMI.2".Split('/')).Select(value => value.name)));
@@ -803,7 +803,9 @@ public static class PdfReader {
                         letter.Width,
                         letter.FontSize,
                         letter.Font,
-                        letter.Color,
+                        letter.RenderingMode,
+                        letter.StrokeColor,
+                        letter.FillColor,
                         letter is { Value: "\"", PointSize: 9.6, FontName: var fontName } && fontName.EndsWith("CourierNewPSMT") ? 8.8 : letter.PointSize,
                         letter.TextSequence)
                     ).ToImmutableList();

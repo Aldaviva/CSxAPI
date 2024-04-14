@@ -18,6 +18,7 @@ public static partial class CsClientWriter {
                                         {FILE_HEADER}
 
                                         using {NAMESPACE}.API.Data;
+                                        using {NAMESPACE}.API.Exceptions;
                                         using System.CodeDom.Compiler;
 
                                         namespace {NAMESPACE}.API;
@@ -38,7 +39,8 @@ public static partial class CsClientWriter {
                                                             /// {status.description.NewLinesToParagraphs()}
                                                             /// </summary>
                                                         {string.Join("\r\n", status.arrayIndexParameters.Select(param => $"    /// <param name=\"{getArgumentName(param, true)}\">{param.description.NewLinesToParagraphs()}</param>"))}
-                                                            /// <returns>A <see cref="Task&lt;T&gt;"/> that will complete asynchronously with the response from the device.</returns>)
+                                                            /// <returns>A <see cref="Task&lt;T&gt;"/> that will complete asynchronously with the response from the device.</returns>
+                                                            /// <exception cref="CommandNotFoundException">The status is not available on the endpoint's software version or hardware</exception>
                                                             {methodSignature.signature};
                                                         
                                                             /// <summary>

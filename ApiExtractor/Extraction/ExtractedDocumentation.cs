@@ -51,6 +51,7 @@ public enum Product {
 
     Board,
     BoardPro,
+    BoardProG2,
     CodecEQ,
     CodecPlus,
     CodecPro,
@@ -62,7 +63,9 @@ public enum Product {
     Room55D,
     Room70G2,
     RoomBar,
+    RoomBarPro,
     RoomKit,
+    RoomKitEQX,
     RoomKitMini,
     RoomPanorama,
     Room70Panorama

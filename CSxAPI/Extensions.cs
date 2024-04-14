@@ -1,11 +1,11 @@
-﻿using System.Text.RegularExpressions;
-using CSxAPI.API.Data;
+﻿using CSxAPI.API.Data;
+using System.Text.RegularExpressions;
 
 namespace CSxAPI;
 
 public static class Extensions {
 
-    private static readonly Regex Underscore = new(@"_");
+    private static readonly Regex Underscore = new("_");
 
     private static readonly IDictionary<ConfigurationTimeZone, TimeZoneInfo> TimeZoneInfoCache = new Dictionary<ConfigurationTimeZone, TimeZoneInfo>();
 
@@ -19,18 +19,17 @@ public static class Extensions {
         if (!TimeZoneInfoCache.TryGetValue(xapiTimeZone, out TimeZoneInfo? timeZone)) {
             timeZone = xapiTimeZone switch {
                 ConfigurationTimeZone.Antarctica_Troll => TimeZoneInfo.CreateCustomTimeZone("Antarctica/Troll", TimeSpan.Zero, "(UTC+00:00) Troll", "Greenwich Mean Time",
-                    "Central European Summer Time",
-                    new[] {
+                    "Central European Summer Time", [
                         TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(DateTime.MinValue.Date, DateTime.MaxValue.Date, TimeSpan.FromHours(2),
                             TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 1, 0, 0), 3, 3, DayOfWeek.Sunday),
                             TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 3, 0, 0), 10, 5, DayOfWeek.Sunday))
-                    }),
+                    ]),
                 ConfigurationTimeZone.America_Ciudad_Juarez => TimeZoneInfo.CreateCustomTimeZone("America/Ciudad_Juarez", TimeSpan.FromHours(-7), "(UTC-07:00) Ciudad Juárez", "Mountain Standard Time",
-                    "Mountain Daylight Time", new[] {
+                    "Mountain Daylight Time", [
                         TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(DateTime.MinValue.Date, DateTime.MaxValue.Date, TimeSpan.FromHours(1),
                             TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 2, 0, 0), 3, 2, DayOfWeek.Sunday),
                             TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 2, 0, 0), 11, 1, DayOfWeek.Sunday))
-                    }),
+                    ]),
                 _ => TimeZoneInfo.FindSystemTimeZoneById(xapiTimeZone switch {
                         ConfigurationTimeZone.Africa_Porto_Novo                => "Africa/Porto-Novo",
                         ConfigurationTimeZone.America_Argentina_Buenos_Aires   => "America/Argentina/Buenos_Aires",
@@ -183,7 +182,7 @@ public static class Extensions {
             "US/East-Indiana"                  => ConfigurationTimeZone.US_East_Indiana,
             "US/Indiana-Starke"                => ConfigurationTimeZone.US_Indiana_Starke,
             "W-SU"                             => ConfigurationTimeZone.W_SU,
-            _ => Enum.TryParse(Regex.Replace(dotnetTimeZone.Id, @"[^a-z0-9_]", match => match.Value switch {
+            _ => Enum.TryParse(Regex.Replace(dotnetTimeZone.Id, "[^a-z0-9_]", match => match.Value switch {
                 "."                                        => "_",
                 "/"                                        => "_",
                 "+"                                        => "_Plus_",

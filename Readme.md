@@ -1,7 +1,7 @@
 CSxAPI
 ===
 
-![target version](https://img.shields.io/badge/target%20version-RoomOS%2011.5-%3B?logo=cisco&logoColor=white) [![NuGet](https://img.shields.io/nuget/v/CSxAPI?logo=nuget)](https://www.nuget.org/packages/csxapi)
+![target version](https://img.shields.io/badge/target%20version-RoomOS%2011.14-%3B?logo=cisco&logoColor=white) [![NuGet](https://img.shields.io/nuget/v/CSxAPI?logo=nuget)](https://www.nuget.org/packages/csxapi)
 
 CSxAPI is a strongly-typed API client library for Cisco **xAPI**. It is similar to the official [jsxapi](https://www.npmjs.com/package/jsxapi) implementation, but for .NET instead of JavaScript. xAPI is exposed by [Cisco video conferencing devices](https://www.cisco.com/c/en/us/products/collaboration-endpoints/collaboration-room-endpoints/index.html), which are known by many names:
 
@@ -29,7 +29,6 @@ This library can send and receive xCommands, xConfigurations, xStatuses, and xEv
     1. [Events](#events)
 1. [Error handling](#error-handling)
 1. [Testing](#testing)
-    1. [Dependent unit testing](#dependent-unit-testing)
 
 <!-- /MarkdownTOC -->
 
@@ -39,7 +38,7 @@ This library can send and receive xCommands, xConfigurations, xStatuses, and xEv
 ## Requirements
 - [.NET 6 or later](https://dotnet.microsoft.com/en-us/download/dotnet)
 - [Cisco endpoint](https://www.cisco.com/c/en/us/products/collaboration-endpoints/collaboration-room-endpoints/index.html)
-    - *Targeted endpoint software version:* **RoomOS 11.5**
+    - *Targeted endpoint software version:* **RoomOS 11.14**
         - Each CSxAPI library release targets exactly one endpoint software version, ideally the latest on-premises version
         - Other endpoint software versions should also work, as long as the API didn't introduce any breaking changes from the target version
         - This library makes no additional attempt at backwards compatibility other than that afforded by xAPI, which is very backwards compatible on its own
@@ -64,9 +63,9 @@ dotnet add package CSxAPI
 ```
 
 ## API documentation
-For xAPI documentation, refer to the [API Reference Guide PDF](https://www.cisco.com/c/en/us/support/collaboration-endpoints/spark-room-kit-series/products-command-reference-list.html) for the endpoint software version that this CSxAPI release targets, RoomOS 11.5.
+For xAPI documentation, refer to the [API Reference Guide PDF](https://www.cisco.com/c/en/us/support/collaboration-endpoints/spark-room-kit-series/products-command-reference-list.html) for the endpoint software version that this CSxAPI release targets.
 
-Alternatively, you may refer to the [online xAPI documentation site](https://roomos.cisco.com/xapi).
+Alternatively, you may refer to the [online xAPI documentation](https://roomos.cisco.com/xapi).
 
 ## Connection
 ```cs
@@ -155,11 +154,51 @@ To receive notifications when it is disconnected, subscribe to the `Disconnected
 Not yet implemented
 
 #### Method not found
-Not yet implemented
+If you try to call an xCommand, xConfiguration, or xStatus on an endpoint that does not support it, the method call will asynchronously throw a `CommandNotFoundException`.
+
+For example, `xCommand Cameras Background Clear` only applies to Desk series endpoints. If you try to call it on a different endpoint, such as a Room Kit, it will throw that exception.
+
+> `CSxAPI.API.Exceptions.CommandNotFoundException: xAPI command "xCommand Cameras Background Clear" was not found on the endpoint whiterazor.aldaviva.com, it may not be available on the software version or hardware of the endpoint`
 
 #### Illegal arguments
-Not yet implemented
+If you try to call an xCommand or xConfiguration on an endpoint and pass an argument that is invalid, the method will asynchronously throw an `IllegalArgumentException`.
+
+For example, `xCommand Dial` requires a `Number` argument. If you pass the empty string, instead of a valid dial string like a SIP URI, it will throw that exception.
+
+> `CSxAPI.API.Exceptions.IllegalArgumentException: Illegal argument passed to "xCommand Dial" on endpoint whiterazor.aldaviva.com { Number=, Protocol=, CallRate=, CallType=, BookingId=, Appearance=, DisplayName=, TrackingData= }`
 
 ## Testing
-### Dependent unit testing
-To do 
+If you want to automate testing of code that depends on CSxAPI, you can easily mock out CSxAPI because it is based on interfaces.
+
+For example, using the best-in-class .NET testing libraries [FakeItEasy](https://fakeiteasy.github.io/docs/) for mocking and [Fluent Assertions](https://fluentassertions.com/introduction) for assertions, it's simple to verify this sample code under test that dials and hangs up a call.
+
+```cs
+using CSxAPI;
+using FakeItEasy;
+using FluentAssertions;
+using Xunit;
+
+public class SampleUnitTest {
+
+    private readonly XAPI _xapi = A.Fake<XAPI>();
+
+    [Fact]
+    public async Task DialAndHangUp() {
+        // Arrange
+        A.CallTo(() => _xapi.Command.Dial(A<string>._, null, null, null, null, null, null, null))
+            .Returns(new Dictionary<string, object> { ["CallId"] = 3, ["ConferenceId"] = 2 });
+
+        // Act
+        IDictionary<string, object> actual = await _xapi.Command.Dial("10990@bjn.vc");
+        await _xapi.Command.Call.Disconnect();
+
+        // Assert
+        actual["CallId"].Should().Be(3);
+        actual["ConferenceId"].Should().Be(2);
+
+        A.CallTo(() => _xapi.Command.Dial("10990@bjn.vc", null, null, null, null, null, null, null)).MustHaveHappened();
+        A.CallTo(() => _xapi.Command.Call.Disconnect(null)).MustHaveHappened();
+    }
+
+}
+```

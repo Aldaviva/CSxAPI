@@ -18,6 +18,7 @@ public static partial class CsClientWriter {
                                                {FILE_HEADER}
 
                                                using {NAMESPACE}.API.Data;
+                                               using {NAMESPACE}.API.Exceptions;
                                                using System.CodeDom.Compiler;
 
                                                namespace {NAMESPACE}.API;
@@ -39,7 +40,9 @@ public static partial class CsClientWriter {
                                                                    /// {configuration.description.NewLinesToParagraphs()}
                                                                    /// </summary>
                                                                {string.Join("\r\n", configuration.parameters.Select(param => $"    /// <param name=\"{getArgumentName(param, true)}\">{param.description.NewLinesToParagraphs()}</param>"))}
-                                                                   /// <returns>A <see cref="Task"/> that will complete asynchronously when the configuration change has been received by the device.</returns>)
+                                                                   /// <returns>A <see cref="Task"/> that will complete asynchronously when the configuration change has been received by the device.</returns>
+                                                                   /// <exception cref="CommandNotFoundException">The configuration is not available on the endpoint's software version or hardware</exception>
+                                                                   /// <exception cref="IllegalArgumentException">The passed argument value is invalid</exception>
                                                                    {setterSignature.signature};
                                                                
                                                                    /// <summary>
@@ -48,6 +51,7 @@ public static partial class CsClientWriter {
                                                                    /// </summary>
                                                                {string.Join("\r\n", configuration.parameters.Where(parameter => parameter is IntParameter { indexOfParameterInName: not null }).Select(param => $"    /// <param name=\"{getArgumentName(param, true)}\">{param.description.NewLinesToParagraphs()}</param>"))}
                                                                    /// <returns>A <see cref="Task&lt;T&gt;"/> that will complete asynchronously with the response from the device.</returns>
+                                                                   /// <exception cref="CommandNotFoundException">The configuration is not available on the endpoint's software version or hardware</exception>
                                                                    {getterSignature.signature};
                                                                
                                                                    /// <summary>
