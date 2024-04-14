@@ -31,4 +31,4 @@ _ReSharper*/
 #Nuget packages folder
 packages/
 /CSxAPI/API/Generated/**/*.cs
-/ApiExtractor/Documentation/event*.xml
+/ApiExtractor/Documentation/event*

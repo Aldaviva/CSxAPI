@@ -1,11 +1,11 @@
-﻿using System;
+﻿using MoreLinq;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using MoreLinq;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Core;
@@ -361,6 +361,10 @@ public static class PdfReader {
                         }
 
                         parameterUsageIndex++;
+                    } else if (state == ParserState.DESCRIPTION && command is DocXStatus) {
+                        // the PDF authors forgot to put the "Value space of the result returned:" text in the description, so we parsed the entire value space definition as the description instead, and are now surprised by the font of the Example
+                        // add the value space definition in Fixes.cs
+                        state = ParserState.USAGE_EXAMPLE;
                     } else {
                         throw new ParsingException(word, state, characterStyle, page, "unexpected state for character style");
                     }
@@ -747,13 +751,13 @@ public static class PdfReader {
             allValues = split.Insert(intermediateValues, ellipsisIndex);
         }
 
-        return Enumerable.ToHashSet(allValues.Select(s => new EnumValue(s)));
+        return allValues.Select(s => new EnumValue(s)).ToHashSet();
     }
 
     private static ISet<EnumValue> parseEnumValueSpacePossibleValues(string enumList, string delimiter = "/") =>
         parseEnumValueSpacePossibleValues(enumList.TrimEnd(')').Split(delimiter, StringSplitOptions.RemoveEmptyEntries));
 
-    private static ISet<EnumValue> parseEnumValueSpacePossibleValues(IEnumerable<string> enumList) => Enumerable.ToHashSet(enumList.Select(value => new EnumValue(value)));
+    private static ISet<EnumValue> parseEnumValueSpacePossibleValues(IEnumerable<string> enumList) => enumList.Select(value => new EnumValue(value)).ToHashSet();
 
     private static string appendWord(string? head, Word tail, double? previousWordBaseline) {
         double baselineDifference = getBaselineDifference(tail, previousWordBaseline);

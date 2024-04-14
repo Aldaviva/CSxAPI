@@ -7,15 +7,16 @@
         <Nullable>enable</Nullable>
         <NoWarn>CS8524, CS8846, CS8509</NoWarn>
         <Authors>Ben Hutchison</Authors>
-        <Copyright>© 2023 $(Authors)</Copyright>
+        <Copyright>© 2024 $(Authors)</Copyright>
         <Company>$(Authors)</Company>
         <StartupObject>ApiExtractor.ApiExtractor</StartupObject>
         <IsPackable>false</IsPackable>
+        <RollForward>latestMajor</RollForward>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="jaytwo.FluentUri" Version="0.1.4" />
-        <PackageReference Include="morelinq" Version="3.4.2" />
+        <PackageReference Include="morelinq" Version="4.2.0" />
         <PackageReference Include="PdfPig" Version="0.1.7" />
     </ItemGroup>
 

@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using ApiExtractor.Extraction;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using ApiExtractor.Extraction;
 
 namespace ApiExtractor.Generation;
 
@@ -15,15 +15,15 @@ public static partial class CsClientWriter {
         IDictionary<string, ISet<InterfaceChild>> interfaceTree = generateInterfaceTree(documentation.statuses);
 
         await istatusWriter.WriteAsync($"""
-            {FILE_HEADER}
+                                        {FILE_HEADER}
 
-            using {NAMESPACE}.API.Data;
-            using System.CodeDom.Compiler;
-            
-            namespace {NAMESPACE}.API;
+                                        using {NAMESPACE}.API.Data;
+                                        using System.CodeDom.Compiler;
+
+                                        namespace {NAMESPACE}.API;
 
 
-            """);
+                                        """);
 
         foreach (KeyValuePair<string, ISet<InterfaceChild>> interfaceNode in interfaceTree) {
             await istatusWriter.WriteAsync($"{GENERATED_ATTRIBUTE}\r\npublic interface {interfaceNode.Key} {{\r\n\r\n");
@@ -33,23 +33,23 @@ public static partial class CsClientWriter {
                     case InterfaceMethod<DocXStatus> { command: var status }:
                         (string signature, string returnType) methodSignature = generateMethodSignature(status, true);
                         await istatusWriter.WriteAsync($"""
-                                /// <summary>
-                                /// <para><c>{string.Join(' ', status.name)}</c></para>
-                                /// {status.description.NewLinesToParagraphs()}
-                                /// </summary>
-                            {string.Join("\r\n", status.arrayIndexParameters.Select(param => $"    /// <param name=\"{getArgumentName(param, true)}\">{param.description.NewLinesToParagraphs()}</param>"))}
-                                /// <returns>A <see cref="Task&lt;T&gt;"/> that will complete asynchronously with the response from the device.</returns>)
-                                {methodSignature.signature};
+                                                            /// <summary>
+                                                            /// <para><c>{string.Join(' ', status.name)}</c></para>
+                                                            /// {status.description.NewLinesToParagraphs()}
+                                                            /// </summary>
+                                                        {string.Join("\r\n", status.arrayIndexParameters.Select(param => $"    /// <param name=\"{getArgumentName(param, true)}\">{param.description.NewLinesToParagraphs()}</param>"))}
+                                                            /// <returns>A <see cref="Task&lt;T&gt;"/> that will complete asynchronously with the response from the device.</returns>)
+                                                            {methodSignature.signature};
+                                                        
+                                                            /// <summary>
+                                                            /// <para><c>{string.Join(' ', status.name)}</c></para>
+                                                            /// {status.description.NewLinesToParagraphs()}
+                                                            /// <para>Fires an event when the status changes.</para>
+                                                            /// </summary>
+                                                            {generateEventSignature(status, true)};
 
-                                /// <summary>
-                                /// <para><c>{string.Join(' ', status.name)}</c></para>
-                                /// {status.description.NewLinesToParagraphs()}
-                                /// <para>Fires an event when the status changes.</para>
-                                /// </summary>
-                                {generateEventSignature(status, true)};
 
-
-                            """);
+                                                        """);
                         break;
 
                     case Subinterface<DocXStatus> s:
@@ -62,27 +62,27 @@ public static partial class CsClientWriter {
         }
 
         await statusWriter.WriteAsync($$"""
-            {{FILE_HEADER}}
+                                        {{FILE_HEADER}}
 
-            using {{NAMESPACE}}.API.Data;
-            using {{NAMESPACE}}.API.Serialization;
-            using {{NAMESPACE}}.Transport;
-            using System.CodeDom.Compiler;
+                                        using {{NAMESPACE}}.API.Data;
+                                        using {{NAMESPACE}}.API.Serialization;
+                                        using {{NAMESPACE}}.Transport;
+                                        using System.CodeDom.Compiler;
 
-            namespace {{NAMESPACE}}.API;
+                                        namespace {{NAMESPACE}}.API;
 
-            {{GENERATED_ATTRIBUTE}}
-            internal class Statuses: {{string.Join(", ", interfaceTree.Keys)}} {
+                                        {{GENERATED_ATTRIBUTE}}
+                                        internal class Statuses: {{string.Join(", ", interfaceTree.Keys)}} {
+                                        
+                                            private readonly IXapiTransport transport;
+                                            private readonly FeedbackSubscriber feedbackSubscriber;
+                                        
+                                            public Statuses(IXapiTransport transport, FeedbackSubscriber feedbackSubscriber) {
+                                                this.transport = transport;
+                                                this.feedbackSubscriber = feedbackSubscriber;
+                                            }
 
-                private readonly IXapiTransport transport;
-                private readonly FeedbackSubscriber feedbackSubscriber;
-
-                public Statuses(IXapiTransport transport, FeedbackSubscriber feedbackSubscriber) {
-                    this.transport = transport;
-                    this.feedbackSubscriber = feedbackSubscriber;
-                }
-
-            """);
+                                        """);
 
         foreach (DocXStatus xStatus in documentation.statuses) {
             (string signature, string returnType) getterImplementationMethod = generateMethodSignature(xStatus, false);
@@ -91,28 +91,28 @@ public static partial class CsClientWriter {
                 $"new[] {{ {string.Join(", ", xStatus.name.Select((s, i) => xStatus.arrayIndexParameters.FirstOrDefault(parameter => parameter.indexOfParameterInName == i) is { } pathParameter ? $"{getArgumentName(pathParameter)}.ToString()" : $"\"{s}\""))} }}";
 
             string serializedType       = xStatus.returnValueSpace.type == DataType.INTEGER && xStatus.returnValueSpace is not IntValueSpace { optionalValue: not null } ? "int" : "string";
-            string remoteCallExpression = $"await transport.GetConfigurationOrStatus<{serializedType}>({path}).ConfigureAwait(false)";
+            string remoteCallExpression = $"await this.transport.GetConfigurationOrStatus<{serializedType}>({path}).ConfigureAwait(false)";
             await statusWriter.WriteAsync($$"""
-                    /// <inheritdoc />
-                    {{getterImplementationMethod.signature}} {
-                        return {{generateDeserializerExpression(xStatus, remoteCallExpression)}};
-                    }
+                                                /// <inheritdoc />
+                                                {{getterImplementationMethod.signature}} {
+                                                    return {{generateDeserializerExpression(xStatus, remoteCallExpression)}};
+                                                }
 
 
-                """);
+                                            """);
 
             methodsGenerated++;
 
             string eventSignature = generateEventSignature(xStatus, false);
             await statusWriter.WriteAsync($$"""
-                    /// <inheritdoc />
-                    {{eventSignature}} {
-                        add => feedbackSubscriber.Subscribe<{{serializedType}}, {{getterImplementationMethod.returnType}}>(new[] { {{string.Join(", ", xStatus.name.Where((s, i) => !xStatus.arrayIndexParameters.Any(parameter => parameter is { indexOfParameterInName: { } paramIndex } && paramIndex == i)).Select(s => $"\"{s}\""))}} }, value, serialized => {{generateDeserializerExpression(xStatus, "serialized")}}).Wait();
-                        remove => feedbackSubscriber.Unsubscribe(value).Wait(feedbackSubscriber.Timeout);
-                    }
+                                                /// <inheritdoc />
+                                                {{eventSignature}} {
+                                                    add => feedbackSubscriber.Subscribe<{{serializedType}}, {{getterImplementationMethod.returnType}}>(new[] { {{string.Join(", ", xStatus.name.Where((s, i) => !xStatus.arrayIndexParameters.Any(parameter => parameter is { indexOfParameterInName: { } paramIndex } && paramIndex == i)).Select(s => $"\"{s}\""))}} }, value, serialized => {{generateDeserializerExpression(xStatus, "serialized")}}).Wait();
+                                                    remove => feedbackSubscriber.Unsubscribe(value).Wait(feedbackSubscriber.Timeout);
+                                                }
 
 
-                """);
+                                            """);
 
             eventsGenerated++;
         }

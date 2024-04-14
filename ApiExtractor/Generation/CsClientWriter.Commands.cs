@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using ApiExtractor.Extraction;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using ApiExtractor.Extraction;
 
 namespace ApiExtractor.Generation;
 
@@ -15,15 +15,15 @@ public static partial class CsClientWriter {
         IDictionary<string, ISet<InterfaceChild>> interfaceTree = generateInterfaceTree(documentation.commands);
 
         await icommandsWriter.WriteAsync($"""
-            {FILE_HEADER}
+                                          {FILE_HEADER}
 
-            using {NAMESPACE}.API.Data;
-            using System.CodeDom.Compiler;
-            
-            namespace {NAMESPACE}.API;
+                                          using {NAMESPACE}.API.Data;
+                                          using System.CodeDom.Compiler;
+
+                                          namespace {NAMESPACE}.API;
 
 
-            """);
+                                          """);
 
         foreach (KeyValuePair<string, ISet<InterfaceChild>> interfaceNode in interfaceTree) {
             await icommandsWriter.WriteAsync($"{GENERATED_ATTRIBUTE}\r\npublic interface {interfaceNode.Key} {{\r\n\r\n");
@@ -33,16 +33,16 @@ public static partial class CsClientWriter {
                     case InterfaceMethod<DocXCommand> { command: var command }:
                         (string signature, string returnType) methodSignature = generateMethodSignature(command, true);
                         await icommandsWriter.WriteAsync($"""
-                /// <summary>
-                /// <para><c>{string.Join(' ', command.name)}</c></para>
-                /// {command.description.NewLinesToParagraphs()}
-                /// </summary>
-            {string.Join("\r\n", command.parameters.Select(param => $"    /// <param name=\"{getArgumentName(param, true)}\">{param.description.NewLinesToParagraphs()}</param>"))}
-                /// <returns>A <see cref="Task&lt;T&gt;"/> that will complete asynchronously with the response from the device.</returns>)
-                {methodSignature.signature};
+                                                              /// <summary>
+                                                              /// <para><c>{string.Join(' ', command.name)}</c></para>
+                                                              /// {command.description.NewLinesToParagraphs()}
+                                                              /// </summary>
+                                                          {string.Join("\r\n", command.parameters.Select(param => $"    /// <param name=\"{getArgumentName(param, true)}\">{param.description.NewLinesToParagraphs()}</param>"))}
+                                                              /// <returns>A <see cref="Task&lt;T&gt;"/> that will complete asynchronously with the response from the device.</returns>)
+                                                              {methodSignature.signature};
 
 
-            """);
+                                                          """);
                         break;
 
                     case Subinterface<DocXCommand> s:
@@ -55,25 +55,25 @@ public static partial class CsClientWriter {
         }
 
         await commandsWriter.WriteAsync($$"""
-            {{FILE_HEADER}}
+                                          {{FILE_HEADER}}
 
-            using {{NAMESPACE}}.API.Data;
-            using {{NAMESPACE}}.API.Serialization;
-            using {{NAMESPACE}}.Transport;
-            using System.CodeDom.Compiler;
+                                          using {{NAMESPACE}}.API.Data;
+                                          using {{NAMESPACE}}.API.Serialization;
+                                          using {{NAMESPACE}}.Transport;
+                                          using System.CodeDom.Compiler;
 
-            namespace {{NAMESPACE}}.API;
+                                          namespace {{NAMESPACE}}.API;
 
-            {{GENERATED_ATTRIBUTE}}
-            internal class Commands: {{string.Join(", ", interfaceTree.Keys)}} {
+                                          {{GENERATED_ATTRIBUTE}}
+                                          internal class Commands: {{string.Join(", ", interfaceTree.Keys)}} {
+                                          
+                                              private readonly IXapiTransport transport;
+                                          
+                                              public Commands(IXapiTransport transport) {
+                                                  this.transport = transport;
+                                              }
 
-                private readonly IXapiTransport transport;
-            
-                public Commands(IXapiTransport transport) {
-                    this.transport = transport;
-                }
-            
-            """);
+                                          """);
 
         foreach (DocXCommand command in documentation.commands) {
             string path = $"new[] {{ {string.Join(", ", command.name.Select(s => $"\"{s}\""))} }}";
@@ -82,13 +82,13 @@ public static partial class CsClientWriter {
                 : "null";
 
             await commandsWriter.WriteAsync($$"""
-                    /// <inheritdoc />
-                    {{generateMethodSignature(command, false).signature}} {
-                        return await transport.CallMethod({{path}}, {{parameters}}).ConfigureAwait(false);
-                    }
+                                                  /// <inheritdoc />
+                                                  {{generateMethodSignature(command, false).signature}} {
+                                                      return await this.transport.CallMethod({{path}}, {{parameters}}).ConfigureAwait(false);
+                                                  }
 
 
-                """);
+                                              """);
 
             methodsGenerated++;
         }

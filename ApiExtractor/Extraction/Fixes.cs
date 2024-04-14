@@ -4,13 +4,7 @@ using System.Linq;
 
 namespace ApiExtractor.Extraction;
 
-public class Fixes {
-
-    private readonly ExtractedDocumentation documentation;
-
-    public Fixes(ExtractedDocumentation documentation) {
-        this.documentation = documentation;
-    }
+public class Fixes(ExtractedDocumentation documentation) {
 
     public void fix() {
         // Value space descriptions that depend heavily on the endpoint model are hard to parse, so hard-code the value spaces
@@ -61,6 +55,23 @@ public class Fixes {
         foreach (DocXCommand xCommand in documentation.commands.Where(xCommand => xCommand.name[1] == "Zoom").ToList()) {
             documentation.commands.Remove(xCommand);
         }
+
+        // This status has a malformed description in the PDF – it is missing the "Value space of the result returned:" string
+        // Therefore, we cannot parse the value space normally.
+        // To work around this, manually add the value space definition here.
+        documentation.statuses.First(status => status.name.SequenceEqual("xStatus Video Output Connector [n] ConnectedDevice SupportedFormat Res_1920_1200_50".Split(' '))).returnValueSpace =
+            new EnumValueSpace { possibleValues = new HashSet<EnumValue> { new("False") { description = "The format is not supported." }, new("True") { description = "The format is supported." } } };
+
+        // Starting in RoomOS 11.14, the codec can control external serial devices using serial-USB adapters.
+        // The configurations to set the baud rate and other settings are parameterized with a port number, but it is always 1, which is not a valid C# parameter name.
+        // To work around this, rename the parameter from 1 to N, like a normal configuration.
+        foreach (DocXConfiguration xConfiguration in documentation.configurations) {
+            IEnumerable<Parameter> paramWithNumericName =
+                xConfiguration.parameters.Where(param => param is IntParameter { indexOfParameterInName: not null } intParam && int.TryParse(intParam.name, out int _));
+            foreach (Parameter param in paramWithNumericName) {
+                param.name = "n";
+            }
+        }
     }
 
     private void setConfigurationValueSpace(string path, params string[] values) {
@@ -75,7 +86,7 @@ public class Fixes {
     }
 
     private T? findCommand<T>(string path) where T: IPathNamed {
-        IList<string> nameQuery = path.Split(" ");
+        IList<string> nameQuery = path.Split(' ');
         IList<T> collection = typeof(T) switch {
             var t when t == typeof(DocXCommand)       => (List<T>) documentation.commands,
             var t when t == typeof(DocXConfiguration) => (List<T>) documentation.configurations,

@@ -12,7 +12,7 @@ await using XAPI xapi = await new CSxAPIClient("whiterazor.aldaviva.com", "ben",
 
 await ReadEndpointName();
 await ReadUptime();
-await Dial();
+// await Dial();
 
 Console.WriteLine("Press Ctrl+C to hang up and exit.");
 exit.Token.WaitHandle.WaitOne();

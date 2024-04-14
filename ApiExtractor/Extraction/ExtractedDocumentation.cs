@@ -41,7 +41,8 @@ public enum UserRole {
     INTEGRATOR,
     USER,
     AUDIT,
-    ROOMCONTROL
+    ROOMCONTROL,
+    TOUCHUSER
 
 }
 

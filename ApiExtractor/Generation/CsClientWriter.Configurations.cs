@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using ApiExtractor.Extraction;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using ApiExtractor.Extraction;
 
 namespace ApiExtractor.Generation;
 
@@ -15,15 +15,15 @@ public static partial class CsClientWriter {
         IDictionary<string, ISet<InterfaceChild>> interfaceTree = generateInterfaceTree(documentation.configurations);
 
         await iconfigurationWriter.WriteAsync($"""
-            {FILE_HEADER}
+                                               {FILE_HEADER}
 
-            using {NAMESPACE}.API.Data;
-            using System.CodeDom.Compiler;
-            
-            namespace {NAMESPACE}.API;
+                                               using {NAMESPACE}.API.Data;
+                                               using System.CodeDom.Compiler;
+
+                                               namespace {NAMESPACE}.API;
 
 
-            """);
+                                               """);
 
         foreach (KeyValuePair<string, ISet<InterfaceChild>> interfaceNode in interfaceTree) {
             await iconfigurationWriter.WriteAsync($"{GENERATED_ATTRIBUTE}\r\npublic interface {interfaceNode.Key} {{\r\n\r\n");
@@ -34,31 +34,31 @@ public static partial class CsClientWriter {
                         (string signature, string returnType) setterSignature = generateMethodSignature(configuration, true, true);
                         (string signature, string returnType) getterSignature = generateMethodSignature(configuration, false, true);
                         await iconfigurationWriter.WriteAsync($"""
-                                /// <summary>
-                                /// <para><c>{string.Join(' ', configuration.name)}</c></para>
-                                /// {configuration.description.NewLinesToParagraphs()}
-                                /// </summary>
-                            {string.Join("\r\n", configuration.parameters.Select(param => $"    /// <param name=\"{getArgumentName(param, true)}\">{param.description.NewLinesToParagraphs()}</param>"))}
-                                /// <returns>A <see cref="Task"/> that will complete asynchronously when the configuration change has been received by the device.</returns>)
-                                {setterSignature.signature};
+                                                                   /// <summary>
+                                                                   /// <para><c>{string.Join(' ', configuration.name)}</c></para>
+                                                                   /// {configuration.description.NewLinesToParagraphs()}
+                                                                   /// </summary>
+                                                               {string.Join("\r\n", configuration.parameters.Select(param => $"    /// <param name=\"{getArgumentName(param, true)}\">{param.description.NewLinesToParagraphs()}</param>"))}
+                                                                   /// <returns>A <see cref="Task"/> that will complete asynchronously when the configuration change has been received by the device.</returns>)
+                                                                   {setterSignature.signature};
+                                                               
+                                                                   /// <summary>
+                                                                   /// <para><c>{string.Join(' ', configuration.name)}</c></para>
+                                                                   /// {configuration.description.NewLinesToParagraphs()}
+                                                                   /// </summary>
+                                                               {string.Join("\r\n", configuration.parameters.Where(parameter => parameter is IntParameter { indexOfParameterInName: not null }).Select(param => $"    /// <param name=\"{getArgumentName(param, true)}\">{param.description.NewLinesToParagraphs()}</param>"))}
+                                                                   /// <returns>A <see cref="Task&lt;T&gt;"/> that will complete asynchronously with the response from the device.</returns>
+                                                                   {getterSignature.signature};
+                                                               
+                                                                   /// <summary>
+                                                                   /// <para><c>{string.Join(' ', configuration.name)}</c></para>
+                                                                   /// {configuration.description.NewLinesToParagraphs()}
+                                                                   /// <para>Fires an event when the configuration changes.</para>
+                                                                   /// </summary>
+                                                                   {generateEventSignature(configuration, true)};
 
-                                /// <summary>
-                                /// <para><c>{string.Join(' ', configuration.name)}</c></para>
-                                /// {configuration.description.NewLinesToParagraphs()}
-                                /// </summary>
-                            {string.Join("\r\n", configuration.parameters.Where(parameter => parameter is IntParameter { indexOfParameterInName: not null }).Select(param => $"    /// <param name=\"{getArgumentName(param, true)}\">{param.description.NewLinesToParagraphs()}</param>"))}
-                                /// <returns>A <see cref="Task&lt;T&gt;"/> that will complete asynchronously with the response from the device.</returns>
-                                {getterSignature.signature};
 
-                                /// <summary>
-                                /// <para><c>{string.Join(' ', configuration.name)}</c></para>
-                                /// {configuration.description.NewLinesToParagraphs()}
-                                /// <para>Fires an event when the configuration changes.</para>
-                                /// </summary>
-                                {generateEventSignature(configuration, true)};
-
-
-                            """);
+                                                               """);
                         break;
 
                     case Subinterface<DocXConfiguration> s:
@@ -71,27 +71,27 @@ public static partial class CsClientWriter {
         }
 
         await configurationWriter.WriteAsync($$"""
-            {{FILE_HEADER}}
+                                               {{FILE_HEADER}}
 
-            using {{NAMESPACE}}.API.Data;
-            using {{NAMESPACE}}.API.Serialization;
-            using {{NAMESPACE}}.Transport;
-            using System.CodeDom.Compiler;
+                                               using {{NAMESPACE}}.API.Data;
+                                               using {{NAMESPACE}}.API.Serialization;
+                                               using {{NAMESPACE}}.Transport;
+                                               using System.CodeDom.Compiler;
 
-            namespace {{NAMESPACE}}.API;
+                                               namespace {{NAMESPACE}}.API;
 
-            {{GENERATED_ATTRIBUTE}}
-            internal class Configurations: {{string.Join(", ", interfaceTree.Keys)}} {
+                                               {{GENERATED_ATTRIBUTE}}
+                                               internal class Configurations: {{string.Join(", ", interfaceTree.Keys)}} {
+                                               
+                                                   private readonly IXapiTransport transport;
+                                                   private readonly FeedbackSubscriber feedbackSubscriber;
+                                               
+                                                   public Configurations(IXapiTransport transport, FeedbackSubscriber feedbackSubscriber) {
+                                                       this.transport = transport;
+                                                       this.feedbackSubscriber = feedbackSubscriber;
+                                                   }
 
-                private readonly IXapiTransport transport;
-                private readonly FeedbackSubscriber feedbackSubscriber;
-            
-                public Configurations(IXapiTransport transport, FeedbackSubscriber feedbackSubscriber) {
-                    this.transport = transport;
-                    this.feedbackSubscriber = feedbackSubscriber;
-                }
-            
-            """);
+                                               """);
 
         foreach (DocXConfiguration command in documentation.configurations.Where(configuration => configuration.parameters.Any())) {
             Parameter configurationParameter = command.parameters.Last();
@@ -104,39 +104,39 @@ public static partial class CsClientWriter {
                 ? getEnumName(command, configurationParameter.name) + ".Hidden" : getArgumentName(configurationParameter);
 
             await configurationWriter.WriteAsync($$"""
-                    /// <inheritdoc />
-                    {{generateMethodSignature(command, true, false).signature}} {
-                        await transport.SetConfiguration({{path}}, ValueSerializer.Serialize({{deserializedExpression}})).ConfigureAwait(false);
-                    }
+                                                       /// <inheritdoc />
+                                                       {{generateMethodSignature(command, true, false).signature}} {
+                                                           await this.transport.SetConfiguration({{path}}, ValueSerializer.Serialize({{deserializedExpression}})).ConfigureAwait(false);
+                                                       }
 
-                
-                """);
+
+                                                   """);
 
             methodsGenerated++;
 
             (string signature, string returnType) getterImplementationMethod = generateMethodSignature(command, false, false);
             string                                readSerializedType         = configurationParameter.type == DataType.INTEGER ? "int" : "string";
-            string                                remoteCallExpression       = $"await transport.GetConfigurationOrStatus<{readSerializedType}>({path}).ConfigureAwait(false)";
+            string                                remoteCallExpression       = $"await this.transport.GetConfigurationOrStatus<{readSerializedType}>({path}).ConfigureAwait(false)";
             await configurationWriter.WriteAsync($$"""
-                    /// <inheritdoc />
-                    {{getterImplementationMethod.signature}} {
-                        return {{generateDeserializerExpression(configurationParameter, command, remoteCallExpression)}};
-                    }
+                                                       /// <inheritdoc />
+                                                       {{getterImplementationMethod.signature}} {
+                                                           return {{generateDeserializerExpression(configurationParameter, command, remoteCallExpression)}};
+                                                       }
 
-                
-                """);
+
+                                                   """);
 
             methodsGenerated++;
 
             await configurationWriter.WriteAsync($$"""
-                    /// <inheritdoc />
-                    {{generateEventSignature(command, false)}} {
-                        add => feedbackSubscriber.Subscribe<{{readSerializedType}}, {{getterImplementationMethod.returnType}}>(new[] { {{string.Join(", ", command.name.Where((s, i) => !command.parameters.Any(parameter => parameter is IntParameter { indexOfParameterInName: { } paramIndex } && paramIndex == i)).Select(s => $"\"{s}\""))}} }, value, serialized => {{generateDeserializerExpression(configurationParameter, command, "serialized")}}).Wait(feedbackSubscriber.Timeout);
-                        remove => feedbackSubscriber.Unsubscribe(value).Wait(feedbackSubscriber.Timeout);
-                    }
+                                                       /// <inheritdoc />
+                                                       {{generateEventSignature(command, false)}} {
+                                                           add => feedbackSubscriber.Subscribe<{{readSerializedType}}, {{getterImplementationMethod.returnType}}>(new[] { {{string.Join(", ", command.name.Where((s, i) => !command.parameters.Any(parameter => parameter is IntParameter { indexOfParameterInName: { } paramIndex } && paramIndex == i)).Select(s => $"\"{s}\""))}} }, value, serialized => {{generateDeserializerExpression(configurationParameter, command, "serialized")}}).Wait(feedbackSubscriber.Timeout);
+                                                           remove => feedbackSubscriber.Unsubscribe(value).Wait(feedbackSubscriber.Timeout);
+                                                       }
 
 
-                """);
+                                                   """);
 
             eventsGenerated++;
         }
