@@ -4,8 +4,11 @@ using StreamJsonRpc;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using System.Net.Sockets;
 using System.Net.WebSockets;
+using System.Security.Authentication;
 using System.Text;
+using NetworkException = CSxAPI.API.Exceptions.NetworkException;
 
 namespace CSxAPI.Transport;
 
@@ -66,7 +69,25 @@ public class WebSocketXapi(string hostname, NetworkCredential credentials): IWeb
         _jsonRpc.Disconnected += OnDisconnection;
 
         // TODO catch and rethrow exceptions for wrong hostname and password
-        await _webSocket.ConnectAsync(new UriBuilder("wss", Hostname, -1, "ws").Uri, cancellationToken ?? CancellationToken.None).ConfigureAwait(false);
+        try {
+            await _webSocket.ConnectAsync(new UriBuilder("wss", Hostname, -1, "ws").Uri, cancellationToken ?? CancellationToken.None).ConfigureAwait(false);
+        } catch (WebSocketException e) {
+            SocketError? socketError = (e.InnerException?.InnerException as SocketException)?.SocketErrorCode;
+            throw e.WebSocketErrorCode switch {
+                WebSocketError.NotAWebSocket                                                                => new NotAuthorizedException(Hostname, Username, e),
+                WebSocketError.Faulted when socketError is SocketError.TimedOut                             => new TimeOutException(Hostname, e),
+                WebSocketError.Faulted when socketError is SocketError.HostNotFound                         => new UnknownHostException(Hostname, e),
+                WebSocketError.Faulted when socketError is SocketError.HostUnreachable                      => new NoRouteToHostException(Hostname, e),
+                WebSocketError.Faulted when socketError is SocketError.ConnectionRefused                    => new ConnectionRefusedException(Hostname, e),
+                WebSocketError.Faulted when e is { InnerException.InnerException: AuthenticationException } => new InvalidCertificateException(Hostname, e),
+                /*{
+                    Message: "The remote certificate is invalid according to the validation procedure: RemoteCertificateNameMismatch, RemoteCertificateChainErrors"
+                    or "The remote certificate was rejected by the provided RemoteCertificateValidationCallback."
+                  }*/
+                _ => new NetworkException($"Unknown WebSocket error while connecting to \"{Hostname}\": {e.Message}", Hostname, e)
+            };
+        }
+
         _jsonRpc.StartListening();
         IsConnected = true;
         IsConnectedChanged?.Invoke(true, null);

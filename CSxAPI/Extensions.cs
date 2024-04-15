@@ -7,11 +7,11 @@ public static class Extensions {
 
     private static readonly Regex Underscore = new("_");
 
-    public static string JoinPath(this object[] path) {
+    private static readonly IDictionary<ConfigurationTimeZone, TimeZoneInfo> TimeZoneInfoCache = new Dictionary<ConfigurationTimeZone, TimeZoneInfo>();
+
+    internal static string JoinPath(this object[] path) {
         return string.Join(' ', path);
     }
-
-    private static readonly IDictionary<ConfigurationTimeZone, TimeZoneInfo> TimeZoneInfoCache = new Dictionary<ConfigurationTimeZone, TimeZoneInfo>();
 
     public static IDictionary<TKey, TValue> Compact<TKey, TValue>(this IDictionary<TKey, TValue?> dictionary) where TKey: notnull where TValue: class {
         return dictionary.Where(entry => entry.Value != null)
