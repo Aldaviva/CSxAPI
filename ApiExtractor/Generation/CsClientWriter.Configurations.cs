@@ -101,7 +101,7 @@ public static partial class CsClientWriter {
             Parameter configurationParameter = command.parameters.Last();
 
             string path =
-                $"new[] {{ {string.Join(", ", command.name.Select((s, i) => command.parameters.OfType<IntParameter>().FirstOrDefault(parameter => parameter.indexOfParameterInName == i) is { } pathParameter ? $"{getArgumentName(pathParameter)}.ToString()" : $"\"{s}\""))} }}";
+                $"new object[] {{ {string.Join(", ", command.name.Select((s, i) => command.parameters.OfType<IntParameter>().FirstOrDefault(parameter => parameter.indexOfParameterInName == i) is { } pathParameter ? getArgumentName(pathParameter) : $"\"{s}\""))} }}";
 
             // Disallow showing Join Zoom button, but still allow it to be hidden, queried, and notified
             string deserializedExpression = command.name.SequenceEqual(new[] { "xConfiguration", "UserInterface", "Features", "Call", "JoinZoom" })

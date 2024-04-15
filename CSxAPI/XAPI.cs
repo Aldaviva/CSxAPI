@@ -1,5 +1,5 @@
 ﻿using CSxAPI.API;
-using StreamJsonRpc;
+using static CSxAPI.Transport.IWebSocketClient;
 
 namespace CSxAPI;
 
@@ -11,13 +11,14 @@ public interface XAPI: IDisposable, IAsyncDisposable {
     bool IsConnected { get; }
     bool AllowSelfSignedTls { get; set; }
     bool ConsoleTracing { get; set; }
+    bool AutoReconnect { get; set; }
 
     ICommands Command { get; }
     IConfigurations Configuration { get; }
     IStatuses Status { get; }
     IEvents Event { get; }
 
-    event EventHandler<JsonRpcDisconnectedEventArgs>? Disconnected;
+    event IsConnectedChangedHandler? IsConnectedChanged;
 
     Task<XAPI> Connect(CancellationToken cancellationToken = default);
 

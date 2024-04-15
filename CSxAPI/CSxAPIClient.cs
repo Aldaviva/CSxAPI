@@ -1,7 +1,6 @@
-﻿using System.Net;
-using CSxAPI.API;
+﻿using CSxAPI.API;
 using CSxAPI.Transport;
-using StreamJsonRpc;
+using System.Net;
 
 namespace CSxAPI;
 
@@ -29,6 +28,12 @@ public class CSxAPIClient: XAPI {
     }
 
     /// <inheritdoc />
+    public bool AutoReconnect {
+        get => _transport.AutoReconnect;
+        set => _transport.AutoReconnect = value;
+    }
+
+    /// <inheritdoc />
     public ICommands Command { get; }
 
     /// <inheritdoc />
@@ -41,13 +46,14 @@ public class CSxAPIClient: XAPI {
     public IEvents Event { get; }
 
     /// <inheritdoc />
-    public event EventHandler<JsonRpcDisconnectedEventArgs>? Disconnected {
-        add => _transport.Disconnected += value;
-        remove => _transport.Disconnected -= value;
+    public event IWebSocketClient.IsConnectedChangedHandler? IsConnectedChanged {
+        add => _transport.IsConnectedChanged += value;
+        remove => _transport.IsConnectedChanged -= value;
     }
 
-    private readonly NetworkCredential _credentials;
-    private readonly IWebSocketXapi    _transport;
+    private readonly NetworkCredential  _credentials;
+    private readonly IWebSocketXapi     _transport;
+    private readonly FeedbackSubscriber _feedbackSubscriber;
 
     public CSxAPIClient(string hostname, string username, string password): this(hostname, new NetworkCredential(username, password)) { }
 
@@ -56,12 +62,12 @@ public class CSxAPIClient: XAPI {
         _credentials = credentials;
         _transport   = new WebSocketXapi(Hostname, _credentials);
 
-        FeedbackSubscriber feedbackSubscriber = new(_transport);
+        _feedbackSubscriber = new FeedbackSubscriber(_transport);
 
         Command       = new Commands(_transport);
-        Configuration = new Configurations(_transport, feedbackSubscriber);
-        Status        = new Statuses(_transport, feedbackSubscriber);
-        Event         = new Events(feedbackSubscriber);
+        Configuration = new Configurations(_transport, _feedbackSubscriber);
+        Status        = new Statuses(_transport, _feedbackSubscriber);
+        Event         = new Events(_feedbackSubscriber);
     }
 
     /// <inheritdoc />
@@ -73,6 +79,7 @@ public class CSxAPIClient: XAPI {
     /// <inheritdoc cref="Dispose()" />
     protected virtual void Dispose(bool disposing) {
         if (disposing) {
+            _feedbackSubscriber.Dispose();
             _transport.Dispose();
         }
     }
@@ -86,6 +93,7 @@ public class CSxAPIClient: XAPI {
     /// <inheritdoc />
     public ValueTask DisposeAsync() {
         GC.SuppressFinalize(this);
+        _feedbackSubscriber.Dispose();
         return _transport.DisposeAsync();
     }
 

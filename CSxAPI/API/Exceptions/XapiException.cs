@@ -1,11 +1,7 @@
 ﻿namespace CSxAPI.API.Exceptions;
 
-public abstract class XapiException: ApplicationException {
+public abstract class XapiException(string message, string hostname, Exception cause): ApplicationException(message, cause) {
 
-    protected XapiException(string message, string hostname, Exception cause): base(message, cause) {
-        Hostname = hostname;
-    }
-
-    public string Hostname { get; init; }
+    public string Hostname { get; init; } = hostname;
 
 }

@@ -90,7 +90,7 @@ public static partial class CsClientWriter {
             (string signature, string returnType) getterImplementationMethod = generateMethodSignature(xStatus, false);
 
             string path =
-                $"new[] {{ {string.Join(", ", xStatus.name.Select((s, i) => xStatus.arrayIndexParameters.FirstOrDefault(parameter => parameter.indexOfParameterInName == i) is { } pathParameter ? $"{getArgumentName(pathParameter)}.ToString()" : $"\"{s}\""))} }}";
+                $"new object[] {{ {string.Join(", ", xStatus.name.Select((s, i) => xStatus.arrayIndexParameters.FirstOrDefault(parameter => parameter.indexOfParameterInName == i) is { } pathParameter ? getArgumentName(pathParameter) : $"\"{s}\""))} }}";
 
             string serializedType       = xStatus.returnValueSpace.type == DataType.INTEGER && xStatus.returnValueSpace is not IntValueSpace { optionalValue: not null } ? "int" : "string";
             string remoteCallExpression = $"await this.transport.GetConfigurationOrStatus<{serializedType}>({path}).ConfigureAwait(false)";

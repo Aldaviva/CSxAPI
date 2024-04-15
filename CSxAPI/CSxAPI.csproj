@@ -13,7 +13,7 @@
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
         <ImplicitUsings>true</ImplicitUsings>
-        <NoWarn>VSTHRD200</NoWarn>
+        <NoWarn>VSTHRD200, VSTHRD101, CS8524, IDE0079</NoWarn>
         <RootNamespace>CSxAPI</RootNamespace>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
         <Description>$(AssemblyTitle)</Description>

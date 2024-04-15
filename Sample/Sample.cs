@@ -1,35 +1,50 @@
 ﻿using CSxAPI;
 
+Console.WriteLine("Connecting...");
+await using XAPI xapi = new CSxAPIClient("whisperblade.aldaviva.com", "ben", Environment.GetEnvironmentVariable("password") ?? "") { ConsoleTracing = false };
+xapi.IsConnectedChanged += (connected, _) => Console.WriteLine(connected ? "Connected" : "Disconnected");
+await xapi.Connect();
+
 CancellationTokenSource exit = new();
 Console.CancelKeyPress += (_, eventArgs) => {
-    eventArgs.Cancel = true;
     exit.Cancel();
+    eventArgs.Cancel = true;
 };
 
-Console.WriteLine("Connecting...");
-await using XAPI xapi = await new CSxAPIClient("whiterazor.aldaviva.com", "ben", Environment.GetEnvironmentVariable("password") ?? "") { ConsoleTracing = false }
-    .Connect();
+Task<string> name            = xapi.Configuration.SystemUnit.Name();
+Task<string> modelName       = xapi.Status.SystemUnit.ProductId();
+Task<string> softwareVersion = xapi.Status.SystemUnit.Software.DisplayName();
+Task<string> softwareDate    = xapi.Status.SystemUnit.Software.ReleaseDate();
+Console.WriteLine("Endpoint name: {0} ({1}, {2} {3})", await name, await modelName, await softwareVersion, await softwareDate);
 
-await ReadEndpointName();
-await ReadUptime();
-// await Dial();
+TimeSpan uptime = TimeSpan.FromSeconds(await xapi.Status.SystemUnit.Uptime());
+Console.WriteLine($"Uptime: {uptime.Days:N0} day(s), {uptime.Hours:N0} hour(s), {uptime.Minutes:N0} minute(s), and {uptime.Seconds:N0} second(s).");
 
-Console.WriteLine("Press Ctrl+C to hang up and exit.");
+for (int serverIndex = 1; serverIndex <= 3; serverIndex++) {
+    string dnsServer = await xapi.Configuration.Network.N.DNS.Server.N.Address(1, serverIndex);
+    Console.WriteLine($"DNS Server {serverIndex:N0}: {dnsServer}");
+}
+
+static void PrintAudioVolume(int value) => Console.WriteLine($"Audio output volume: {value} dB");
+PrintAudioVolume(await xapi.Status.Audio.Volume());
+xapi.Status.Audio.VolumeChanged += PrintAudioVolume;
+
+Console.WriteLine("\nPress Enter to show current time on endpoint.");
+Console.WriteLine("Press Ctrl+C to exit.");
+
+_ = Task.Run(async () => {
+    while (true) {
+        ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+        if (keyInfo.Key == ConsoleKey.Enter) {
+            try {
+                string         rawTime = await xapi.Status.Time.SystemTime();
+                DateTimeOffset time    = DateTimeOffset.Parse(rawTime);
+                Console.WriteLine($"Endpoint time: {time:F}");
+            } catch (Exception e) when (e is not OutOfMemoryException) {
+                Console.WriteLine(e);
+            }
+        }
+    }
+});
+
 exit.Token.WaitHandle.WaitOne();
-
-await xapi.Command.Call.Disconnect();
-
-async Task ReadEndpointName() {
-    string name = await xapi.Configuration.SystemUnit.Name();
-    Console.WriteLine($"Endpoint name: {name}");
-}
-
-async Task ReadUptime() {
-    TimeSpan uptime = TimeSpan.FromSeconds(await xapi.Status.SystemUnit.Uptime());
-    Console.WriteLine($"Endpoint has been running for {uptime.Days:N0} day(s), {uptime.Hours:N0} hour(s), {uptime.Minutes:N0} minute(s), and {uptime.Seconds:N0} second(s).");
-}
-
-async Task Dial() {
-    IDictionary<string, object> result = await xapi.Command.Dial(number: "10990@bjn.vc");
-    Console.WriteLine($"Dialed call ID {result["CallId"]} (conference ID {result["ConferenceId"]}).");
-}

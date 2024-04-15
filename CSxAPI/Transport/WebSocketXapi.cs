@@ -1,5 +1,4 @@
 ﻿using CSxAPI.API.Exceptions;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using StreamJsonRpc;
 using System.Diagnostics;
@@ -10,26 +9,104 @@ using System.Text;
 
 namespace CSxAPI.Transport;
 
-[SuppressMessage("ReSharper", "CoVariantArrayConversion")]
-public class WebSocketXapi: IWebSocketXapi {
+public class WebSocketXapi(string hostname, NetworkCredential credentials): IWebSocketXapi {
 
     /// <inheritdoc />
-    public string Hostname { get; }
+    public string Hostname { get; } = hostname;
 
     /// <inheritdoc />
-    public string Username { get; }
+    public string Username => credentials.UserName;
 
     /// <inheritdoc />
     public bool AllowSelfSignedTls { get; set; } = false;
 
     /// <inheritdoc />
+    public bool AutoReconnect { get; set; } = true;
+
+    /// <inheritdoc />
+    public bool IsConnected { get; private set; }
+
+    /// <inheritdoc />
     public bool ConsoleTracing {
-        get => _jsonRpc.TraceSource.Switch.Level == SourceLevels.All;
+        get => _consoleTracing;
         set {
+            _consoleTracing = value;
+            applyConsoleTracing();
+        }
+    }
+
+    /// <inheritdoc />
+    public event IWebSocketClient.IsConnectedChangedHandler? IsConnectedChanged;
+
+    /// <inheritdoc />
+    public event IWebSocketXapi.SubscriptionPublishedArgs? SubscriptionPublished;
+
+    private readonly TraceListener _consoleTraceListener = new ConsoleTraceListener();
+
+    private bool                  _consoleTracing;
+    private JsonRpc?              _jsonRpc;
+    private ClientWebSocket       _webSocket = null!;
+    private bool                  _disposed;
+    private TaskCompletionSource? _reconnected;
+
+    /// <inheritdoc />
+    public async Task Connect(CancellationToken? cancellationToken = null) {
+        _webSocket = new ClientWebSocket();
+
+        _webSocket.Options.SetRequestHeader("Authorization",
+            "Basic " + Convert.ToBase64String(new UTF8Encoding(false, true).GetBytes(credentials.UserName + ":" + credentials.Password), Base64FormattingOptions.None));
+        _webSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(5);
+        if (AllowSelfSignedTls) {
+            _webSocket.Options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
+        }
+
+        _jsonRpc = new JsonRpc(new WebSocketMessageHandler(_webSocket));
+        applyConsoleTracing();
+        _jsonRpc.AddLocalRpcMethod("xFeedback/Event", OnFeedbackEvent);
+        _jsonRpc.Disconnected += OnDisconnection;
+
+        // TODO catch and rethrow exceptions for wrong hostname and password
+        await _webSocket.ConnectAsync(new UriBuilder("wss", Hostname, -1, "ws").Uri, cancellationToken ?? CancellationToken.None).ConfigureAwait(false);
+        _jsonRpc.StartListening();
+        IsConnected = true;
+        IsConnectedChanged?.Invoke(true, null);
+        _reconnected?.SetResult();
+    }
+
+    private void OnDisconnection(object? sender, JsonRpcDisconnectedEventArgs args) => _ = Task.Run(async () => {
+        if (!_disposed) {
+            IsConnected = false;
+            IsConnectedChanged?.Invoke(false, args);
+
+            if (AutoReconnect) {
+                _reconnected = new TaskCompletionSource();
+                while (AutoReconnect && !IsConnected && !_disposed) {
+                    DisposeWebSocket();
+                    try {
+                        await Connect().ConfigureAwait(false);
+                    } catch (WebSocketException) {
+                        await Task.Delay(2000).ConfigureAwait(false);
+                        // try again
+                    }
+                }
+            }
+        }
+    });
+
+    /**
+     * StreamJsonRpc insists on matching parameter names, so provide lots of optional parameters with all possible names, and just pick the one that isn't null
+     */
+    [SuppressMessage("ReSharper", "InconsistentNaming")] // parameter names must exactly match what the endpoint sends in JSON, case sensitively, or this method won't be called
+    private void OnFeedbackEvent(long Id, JObject? Event = null, JObject? Status = null, JObject? Configuration = null) {
+        SubscriptionPublished?.Invoke(Id, (Event ?? Status ?? Configuration)!);
+    }
+
+    private void applyConsoleTracing() {
+        if (_jsonRpc != null) {
             TraceSource traceSource = _jsonRpc.TraceSource;
 
-            traceSource.Switch.Level = value ? SourceLevels.All : SourceLevels.Warning | SourceLevels.ActivityTracing;
-            if (!value) {
+            traceSource.Switch.Level = _consoleTracing ? SourceLevels.All : SourceLevels.Warning | SourceLevels.ActivityTracing;
+            if (!_consoleTracing) {
                 traceSource.Listeners.Remove(_consoleTraceListener);
             } else if (!traceSource.Listeners.Contains(_consoleTraceListener)) {
                 traceSource.Listeners.Add(_consoleTraceListener);
@@ -37,147 +114,77 @@ public class WebSocketXapi: IWebSocketXapi {
         }
     }
 
-    private readonly ClientWebSocket                    _webSocket = new();
-    private readonly JsonRpc                            _jsonRpc;
-    private readonly TraceListener                      _consoleTraceListener = new ConsoleTraceListener();
-    private readonly IDictionary<long, Action<JObject>> _feedbackCallbacks    = new Dictionary<long, Action<JObject>>();
-    private readonly JsonSerializer                     _jsonSerializer       = JsonSerializer.CreateDefault();
-
-    /// <inheritdoc />
-    public bool IsConnected { get; private set; }
-
-    /// <inheritdoc />
-    public event EventHandler<JsonRpcDisconnectedEventArgs>? Disconnected;
-
-    public WebSocketXapi(string hostname, NetworkCredential credentials) {
-        Hostname = hostname;
-        Username = credentials.UserName;
-
-        _webSocket.Options.SetRequestHeader("Authorization",
-            "Basic " + Convert.ToBase64String(new UTF8Encoding(false, true).GetBytes(credentials.UserName + ":" + credentials.Password), Base64FormattingOptions.None));
-
-        _jsonRpc = new JsonRpc(new WebSocketMessageHandler(_webSocket));
-
-        _jsonRpc.Disconnected += (_, args) => {
-            IsConnected = false;
-            Disconnected?.Invoke(this, args);
-        };
+    public Task<T> Get<T>(params object[] path) {
+        return _jsonRpc!.InvokeWithParameterObjectAsync<T>("xGet", new { Path = NormalizePath(path) });
     }
 
-    /// <inheritdoc />
-    public async Task Connect(CancellationToken? cancellationToken = null) {
-        if (AllowSelfSignedTls) {
-            _webSocket.Options.RemoteCertificateValidationCallback = (_, _, _, _) => true;
+    public Task<T> Query<T>(params object[] path) {
+        return _jsonRpc!.InvokeWithParameterObjectAsync<T>("xQuery", new { Path = NormalizePath(path) });
+    }
+
+    public Task<bool> Set(IEnumerable<object> path, object value) {
+        return _jsonRpc!.InvokeWithParameterObjectAsync<bool>("xSet", new { Path = NormalizePath(path), Value = value });
+    }
+
+    public Task<T> Command<T>(IEnumerable<object> path, object? parameters = null) {
+        return _jsonRpc!.InvokeWithParameterObjectAsync<T>(GetCommandMethod(path), parameters);
+    }
+
+    public Task Command(IEnumerable<object> path, object? parameters = null) {
+        return _jsonRpc!.InvokeWithParameterObjectAsync(GetCommandMethod(path), parameters);
+    }
+
+    public async Task<long> Subscribe(object[] path, bool notifyCurrentValue = false) {
+        try {
+            IDictionary<string, object> subscription = await _jsonRpc!.InvokeWithParameterObjectAsync<IDictionary<string, object>>("xFeedback/Subscribe", new {
+                Query              = NormalizePath(path),
+                NotifyCurrentValue = notifyCurrentValue
+            }).ConfigureAwait(false);
+            return (long) subscription["Id"];
+        } catch (ConnectionLostException e) {
+            if (AutoReconnect && _reconnected != null) {
+                await _reconnected.Task.ConfigureAwait(false);
+                return await Subscribe(path, notifyCurrentValue).ConfigureAwait(false);
+            } else {
+                throw new DisconnectedException(Hostname, path, e);
+            }
         }
-
-        Uri uri = new UriBuilder("wss", Hostname, -1, "ws").Uri;
-        await _webSocket.ConnectAsync(uri, cancellationToken ?? CancellationToken.None).ConfigureAwait(false);
-        _jsonRpc.AddLocalRpcMethod("xFeedback/Event", onFeedbackEvent);
-        _jsonRpc.StartListening();
-        IsConnected = true;
-    }
-
-    /**
-     * StreamJsonRpc insists on matching parameter names, so provide lots of optional parameters with all possible names, and just pick the one that isn't null
-     */
-    [SuppressMessage("ReSharper", "InconsistentNaming")] // parameter names must exactly match what the endpoint sends in JSON, case sensitively, or this method won't be called
-    private void onFeedbackEvent(long Id, JObject? Event = null, JObject? Status = null, JObject? Configuration = null) {
-        if (_feedbackCallbacks.TryGetValue(Id, out Action<JObject>? feedbackCallback)) {
-            feedbackCallback(Event ?? Status ?? Configuration!);
-        }
-    }
-
-    /// <inheritdoc />
-    public Task<T> Get<T>(params string[] path) {
-        return _jsonRpc.InvokeWithParameterObjectAsync<T>("xGet", new { Path = GetPath(path) });
-    }
-
-    /// <inheritdoc />
-    public Task<T> Query<T>(params string[] path) {
-        return _jsonRpc.InvokeWithParameterObjectAsync<T>("xQuery", new { Path = GetPath(path) });
-    }
-
-    /// <inheritdoc />
-    public Task<bool> Set(IEnumerable<string> path, object value) {
-        return _jsonRpc.InvokeWithParameterObjectAsync<bool>("xSet", new { Path = GetPath(path), Value = value });
-    }
-
-    /// <inheritdoc />
-    public Task<T> Command<T>(IEnumerable<string> path, object? parameters = null) {
-        return _jsonRpc.InvokeWithParameterObjectAsync<T>(GetCommandMethod(path), parameters);
-    }
-
-    /// <inheritdoc />
-    public Task Command(IEnumerable<string> path, object? parameters = null) {
-        return _jsonRpc.InvokeWithParameterObjectAsync(GetCommandMethod(path), parameters);
-    }
-
-    /// <inheritdoc />
-    public async Task<long> Subscribe(IEnumerable<string> path, Action<JObject> callback, bool notifyCurrentValue = false) {
-        long id = await Subscribe(path, notifyCurrentValue).ConfigureAwait(false);
-        _feedbackCallbacks[id] = callback;
-        return id;
-    }
-
-    /// <inheritdoc />
-    public Task<long> Subscribe(IEnumerable<string> path, Action callback) {
-        return Subscribe(GetPath(path), _ => callback());
-    }
-
-    /// <inheritdoc />
-    public Task<long> Subscribe<T>(IEnumerable<string> path, Action<T> callback, bool notifyCurrentValue = false) {
-        return Subscribe(GetPath(path), serialized => callback(serialized.ToObject<T>(_jsonSerializer)!));
-    }
-
-    private async Task<long> Subscribe(IEnumerable<string> path, bool notifyCurrentValue = false) {
-        IDictionary<string, object> subscription = await _jsonRpc.InvokeWithParameterObjectAsync<IDictionary<string, object>>("xFeedback/Subscribe", new {
-            Query              = path,
-            NotifyCurrentValue = notifyCurrentValue
-        }).ConfigureAwait(false);
-        return (long) subscription["Id"];
     }
 
     /// <inheritdoc />
     public Task<bool> Unsubscribe(long subscriptionId) {
-        _feedbackCallbacks.Remove(subscriptionId);
-        return _jsonRpc.InvokeWithParameterObjectAsync<bool>("xFeedback/Unsubscribe", new { Id = subscriptionId });
+        return _jsonRpc!.InvokeWithParameterObjectAsync<bool>("xFeedback/Unsubscribe", new { Id = subscriptionId });
     }
 
-    private static string GetCommandMethod(IEnumerable<string> path) {
+    private static string GetCommandMethod(IEnumerable<object> path) {
         return string.Join("/", path
-            .SkipWhile((s, i) => i == 0 && (string.Equals(s, "Command", StringComparison.InvariantCultureIgnoreCase) || string.Equals(s, "xCommand", StringComparison.InvariantCultureIgnoreCase)))
+            .SkipWhile((item, i) =>
+                i == 0 && item is string s && (string.Equals(s, "Command", StringComparison.InvariantCultureIgnoreCase) || string.Equals(s, "xCommand", StringComparison.InvariantCultureIgnoreCase)))
             .Prepend("xCommand"));
     }
 
-    private static IEnumerable<string> GetPath(IEnumerable<string> path) {
-        return path.Select((item, index) => index > 0 ? item : item.TrimStart('x'));
+    private static IEnumerable<object> NormalizePath(IEnumerable<object> path) {
+        return path.Select((item, index) => index == 0 && item is string s ? s.TrimStart('x') : item);
     }
 
     /// <inheritdoc />
-    public void Dispose() {
-        _webSocket.Dispose();
-        _jsonRpc.Dispose();
-        GC.SuppressFinalize(this);
-    }
-
-    /// <inheritdoc />
-    public ValueTask DisposeAsync() {
-        Dispose();
-        GC.SuppressFinalize(this);
-        return ValueTask.CompletedTask;
-    }
-
-    /// <inheritdoc />
-    public async Task<T> GetConfigurationOrStatus<T>(string[] path) {
+    public async Task<T> GetConfigurationOrStatus<T>(object[] path) {
         try {
             return await Get<T>(path).ConfigureAwait(false);
         } catch (RemoteMethodNotFoundException e) {
             throw new CommandNotFoundException(Hostname, path, e);
+        } catch (ConnectionLostException e) {
+            if (AutoReconnect && _reconnected != null) {
+                await _reconnected.Task.ConfigureAwait(false);
+                return await GetConfigurationOrStatus<T>(path).ConfigureAwait(false);
+            } else {
+                throw new DisconnectedException(Hostname, path, e);
+            }
         }
     }
 
     /// <inheritdoc />
-    public async Task SetConfiguration(string[] path, object newValue) {
+    public async Task SetConfiguration(object[] path, object newValue) {
         try {
             await Set(path, newValue).ConfigureAwait(false);
         } catch (RemoteMethodNotFoundException e) {
@@ -188,11 +195,18 @@ public class WebSocketXapi: IWebSocketXapi {
             }
 
             throw;
+        } catch (ConnectionLostException e) {
+            if (AutoReconnect && _reconnected != null) {
+                await _reconnected.Task.ConfigureAwait(false);
+                await SetConfiguration(path, newValue).ConfigureAwait(false);
+            } else {
+                throw new DisconnectedException(Hostname, path, e);
+            }
         }
     }
 
     /// <inheritdoc />
-    public async Task<IDictionary<string, object>> CallMethod(string[] path, IDictionary<string, object?>? parameters) {
+    public async Task<IDictionary<string, object>> CallMethod(object[] path, IDictionary<string, object?>? parameters) {
         try {
             return await Command<IDictionary<string, object>>(path, parameters?.Compact()).ConfigureAwait(false);
         } catch (RemoteMethodNotFoundException e) {
@@ -203,7 +217,38 @@ public class WebSocketXapi: IWebSocketXapi {
             }
 
             throw;
+        } catch (ConnectionLostException e) {
+            if (AutoReconnect && _reconnected != null) {
+                await _reconnected.Task.ConfigureAwait(false);
+                return await CallMethod(path, parameters).ConfigureAwait(false);
+            } else {
+                throw new DisconnectedException(Hostname, path, e);
+            }
         }
+    }
+
+    /// <inheritdoc />
+    public void Dispose() {
+        _disposed = true;
+        DisposeWebSocket();
+        _consoleTraceListener.Dispose();
+        GC.SuppressFinalize(this);
+    }
+
+    private void DisposeWebSocket() {
+        _webSocket.Dispose();
+        if (_jsonRpc != null) {
+            _jsonRpc.Disconnected -= OnDisconnection;
+            _jsonRpc.Dispose();
+            _jsonRpc = null;
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask DisposeAsync() {
+        Dispose();
+        GC.SuppressFinalize(this);
+        return ValueTask.CompletedTask;
     }
 
 }

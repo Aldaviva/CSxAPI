@@ -1,3 +1,3 @@
 ﻿namespace IssueCreator;
 
-public record struct PublishedDocumentation(string name, Uri location);
+public record struct PublishedDocumentation(string Name, Uri Location);

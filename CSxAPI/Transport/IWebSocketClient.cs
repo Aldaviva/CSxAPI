@@ -11,7 +11,10 @@ public interface IWebSocketClient {
     Task Connect(CancellationToken? cancellationToken = null);
 
     bool IsConnected { get; }
+    bool AutoReconnect { get; set; }
 
-    event EventHandler<JsonRpcDisconnectedEventArgs>? Disconnected;
+    event IsConnectedChangedHandler? IsConnectedChanged;
+
+    delegate void IsConnectedChangedHandler(bool isConnected, JsonRpcDisconnectedEventArgs? disconnectionDetails);
 
 }
