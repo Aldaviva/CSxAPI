@@ -6,8 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
-using System.Security.Authentication;
 using System.Text;
+using AuthenticationException = CSxAPI.API.Exceptions.AuthenticationException;
 using NetworkException = CSxAPI.API.Exceptions.NetworkException;
 
 namespace CSxAPI.Transport;
@@ -74,12 +74,12 @@ public class WebSocketXapi(string hostname, NetworkCredential credentials): IWeb
         } catch (WebSocketException e) {
             SocketError? socketError = (e.InnerException?.InnerException as SocketException)?.SocketErrorCode;
             throw e.WebSocketErrorCode switch {
-                WebSocketError.NotAWebSocket                                                                => new NotAuthorizedException(Hostname, Username, e),
-                WebSocketError.Faulted when socketError is SocketError.TimedOut                             => new TimeOutException(Hostname, e),
-                WebSocketError.Faulted when socketError is SocketError.HostNotFound                         => new UnknownHostException(Hostname, e),
-                WebSocketError.Faulted when socketError is SocketError.HostUnreachable                      => new NoRouteToHostException(Hostname, e),
-                WebSocketError.Faulted when socketError is SocketError.ConnectionRefused                    => new ConnectionRefusedException(Hostname, e),
-                WebSocketError.Faulted when e is { InnerException.InnerException: AuthenticationException } => new InvalidCertificateException(Hostname, e),
+                WebSocketError.NotAWebSocket                                                                                               => new AuthenticationException(Hostname, Username, e),
+                WebSocketError.Faulted when socketError is SocketError.TimedOut                                                            => new TimeOutException(Hostname, e),
+                WebSocketError.Faulted when socketError is SocketError.HostNotFound                                                        => new UnknownHostException(Hostname, e),
+                WebSocketError.Faulted when socketError is SocketError.HostUnreachable                                                     => new NoRouteToHostException(Hostname, e),
+                WebSocketError.Faulted when socketError is SocketError.ConnectionRefused                                                   => new ConnectionRefusedException(Hostname, e),
+                WebSocketError.Faulted when e is { InnerException.InnerException: System.Security.Authentication.AuthenticationException } => new InvalidCertificateException(Hostname, e),
                 /*{
                     Message: "The remote certificate is invalid according to the validation procedure: RemoteCertificateNameMismatch, RemoteCertificateChainErrors"
                     or "The remote certificate was rejected by the provided RemoteCertificateValidationCallback."

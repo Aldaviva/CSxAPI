@@ -1,18 +1,18 @@
 ﻿namespace CSxAPI.API.Exceptions;
 
+// Super exceptions
+//
 public abstract class XapiException(string message, string hostname, Exception cause): ApplicationException(message, cause) {
 
     public string Hostname { get; init; } = hostname;
 
 }
 
-public class NetworkException(string message, string hostname, Exception cause): XapiException(message, hostname, cause);
-
+public class NetworkException(string         message, string hostname, Exception cause): XapiException(message, hostname, cause);
 public abstract class ClientException(string message, string hostname, Exception cause): XapiException(message, hostname, cause);
-/*
- * Network exceptions
- */
 
+// Network exceptions
+//
 public class ConnectionRefusedException(string  hostname, Exception cause): NetworkException($"Connection refused to WebSocket server {hostname}", hostname, cause);
 public class InvalidCertificateException(string hostname, Exception cause): NetworkException($"Invalid TLS certificate on WebSocket server {hostname}", hostname, cause);
 public class TimeOutException(string            hostname, Exception cause): NetworkException($"Timed out while connecting to WebSocket server {hostname}", hostname, cause);
@@ -33,10 +33,8 @@ public class DisconnectedException: NetworkException {
 
 }
 
-/*
- * Client exceptions
- */
-
+// Client exceptions
+//
 public class CommandNotFoundException: ClientException {
 
     public string CommandName { get; }
@@ -67,8 +65,8 @@ public class IllegalArgumentException: ClientException {
 
 }
 
-public class NotAuthorizedException(string hostname, string username, Exception cause)
-    : ClientException($"Not authorized with username {username}, or incorrect hostname, for WebSocket server {hostname}", hostname, cause) {
+public class AuthenticationException(string hostname, string username, Exception cause)
+    : ClientException($"Not authenticated with username {username}, or incorrect hostname, for WebSocket server {hostname}", hostname, cause) {
 
     public string Username { get; } = username;
 

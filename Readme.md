@@ -148,33 +148,46 @@ xapi.Event.UserInterface.Message.TextInput.Response += response => {
 ```
 
 ## Error handling
+
+All exceptions thrown by this library inherit from the `XapiException` superclass. Exceptions that are the fault of the client (like illegal arguments) inherit from the `ClientException` subclass. Exceptions that are caused by network issues (like timeouts) inherit from the `NetworkException` subclass.
+
 #### Disconnections
 The `CSxAPIClient` class exposes the `bool IsConnected` property, which is `true` when the WebSocket is connected and `false` otherwise.
 
-To receive notifications when it is disconnected, subscribe to the `IsConnectedChanged` event. Its `isConnected` argument will be `false` if the endpoint just disconnected, or `true` if it just [reconnected](#reconnections). The `disconnectionDetails` will contain the underlying reason behind the disconnection if the endpoint just disconnected, otherwise it will be `null` if the endpoint just reconnected. This event is fired when the initial call to `Connect()` succeeds, but not when the `CSxAPIClient` instance is disposed.
+To receive notifications when it is disconnected, subscribe to the `IsConnectedChanged` event. Its `isConnected` argument will be `false` if the endpoint just disconnected, or `true` if it just [reconnected](#reconnections). The `disconnectionDetails` will contain the underlying reason behind the disconnection if the endpoint just disconnected, otherwise it will be `null` if the endpoint just reconnected. This event is fired when the first call to `Connect()` succeeds after constructing the `CSxAPIClient` instance, but not when the instance is disposed.
+
+If you send a request when the client is disconnected from the WebSocket server and [auto-reconnecting](#reconnections) is disabled, it will throw a `DisconnectedException` instead of retrying the request.
 
 #### Reconnections
 The WebSocket connection between this library and the endpoint can disconnect, for example, if an ethernet cable is unplugged, or if the endpoint reboots. When this happens, CSxAPI will try to automatically reconnect.
 
 If it succeeds, it will fire the `IsConnectedChanged` event with `isConnected` set to `true`, calls to xCommands, xConfigurations, and xStatuses will succeed again, and any xFeedback events to which you previously subscribed will be able to be received again. Any commands that were sent while the endpoint was reconnecting will automatically wait for the connection is reestablished, retry, and return the new result to the original caller.
 
-To disable automatic reconnections, set the `AutoReconnect` property to `false` on the `CSxAPIClient`. In this case, any commands that are sent while the endpoint is disconnected will throw a `DisconnectedException` instead of being retried:
+To disable automatic reconnections, set the `AutoReconnect` property to `false` on the `CSxAPIClient`. In this case, any commands that are sent while the endpoint is disconnected will throw a `DisconnectedException` instead of being retried.
 
-> `CSxAPI.API.Exceptions.DisconnectedException: Connection to endpoint whiterazor.aldaviva.com disconnected while running "xCommand Dial" command, and the CSxAPIClient instance had AutoReconnect disabled`
+#### Not authenticated
+If you connect with the wrong username or password, `Connect()` will throw an `AuthenticationException`.
 
-#### Method not found
+It will also throw this same exception if you supply a hostname for a different server, because the response HTTP status code will not be 101 (`Switching Protocols`). Authentication failures to Cisco endpoint WebSocket server return 403 `Forbidden`, but any old HTTP server could also return 403 (or 401, or 404, or any number of other status codes) if you set the hostname wrong. The question of whether that hostname corresponds to a Cisco endpoint for which you're not authorized is ultimately unanswerable and unimportant.
+
+#### Command not found
 If you try to call an xCommand, xConfiguration, or xStatus on an endpoint that does not support it, the method call will asynchronously throw a `CommandNotFoundException`.
 
 For example, `xCommand Cameras Background Clear` only applies to Desk series endpoints. If you try to call it on a different endpoint, such as a Room Kit, it will throw that exception.
-
-> `CSxAPI.API.Exceptions.CommandNotFoundException: xAPI command "xCommand Cameras Background Clear" was not found on the endpoint whiterazor.aldaviva.com, it may not be available on the software version or hardware of the endpoint`
 
 #### Illegal arguments
 If you try to call an xCommand or xConfiguration on an endpoint and pass an argument that is invalid, the method will asynchronously throw an `IllegalArgumentException`.
 
 For example, `xCommand Dial` requires a `Number` argument. If you pass the empty string, instead of a valid dial string like a SIP URI, it will throw that exception.
 
-> `CSxAPI.API.Exceptions.IllegalArgumentException: Illegal argument passed to "xCommand Dial" on endpoint whiterazor.aldaviva.com { Number=, Protocol=, CallRate=, CallType=, BookingId=, Appearance=, DisplayName=, TrackingData= }`
+#### Network errors
+All other exceptions caused by network issues are subclasses of `NetworkException`:
+- `ConnectionRefusedException`
+- `DisconnectedException`
+- `InvalidCertificateException`
+- `NoRouteToHostException`
+- `TimeOutException`
+- `UnknownHostException`
 
 ## Testing
 If you want to automate testing of code that depends on CSxAPI, you can easily mock out CSxAPI because it is based on interfaces like `XAPI`.

@@ -8,6 +8,7 @@
         <IsPackable>false</IsPackable>
         <LangVersion>latest</LangVersion>
         <RollForward>latestMajor</RollForward>
+        <NoWarn>VSTHRD003</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
