@@ -9,6 +9,7 @@
         <IsTestProject>true</IsTestProject>
         <RollForward>latestMajor</RollForward>
         <NoWarn>VSTHRD200</NoWarn>
+        <LangVersion>latest</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>

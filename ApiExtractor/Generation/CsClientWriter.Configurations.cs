@@ -88,13 +88,14 @@ public static partial class CsClientWriter {
                                                internal class Configurations: {{string.Join(", ", interfaceTree.Keys)}} {
                                                
                                                    private readonly IXapiTransport transport;
-                                                   private readonly FeedbackSubscriber feedbackSubscriber;
+                                                   private readonly IFeedbackSubscriber feedbackSubscriber;
                                                
-                                                   public Configurations(IXapiTransport transport, FeedbackSubscriber feedbackSubscriber) {
+                                                   public Configurations(IXapiTransport transport, IFeedbackSubscriber feedbackSubscriber) {
                                                        this.transport = transport;
                                                        this.feedbackSubscriber = feedbackSubscriber;
                                                    }
-
+                                                   
+                                               
                                                """);
 
         foreach (DocXConfiguration command in documentation.configurations.Where(configuration => configuration.parameters.Any())) {

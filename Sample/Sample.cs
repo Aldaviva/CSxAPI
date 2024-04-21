@@ -1,15 +1,9 @@
 ﻿using CSxAPI;
 
 Console.WriteLine("Connecting...");
-await using XAPI xapi = new CSxAPIClient("whisperblade.aldaviva.com", "ben", Environment.GetEnvironmentVariable("password") ?? "") { ConsoleTracing = false };
+await using XAPI xapi = new CSxAPIClient("whisperblade.aldaviva.com", "ben", Environment.GetEnvironmentVariable("password") ?? "") { ConsoleTracing = false, AllowSelfSignedTls = false };
 xapi.IsConnectedChanged += (connected, _) => Console.WriteLine(connected ? "Connected" : "Disconnected");
 await xapi.Connect();
-
-CancellationTokenSource exit = new();
-Console.CancelKeyPress += (_, eventArgs) => {
-    exit.Cancel();
-    eventArgs.Cancel = true;
-};
 
 Task<string> name            = xapi.Configuration.SystemUnit.Name();
 Task<string> modelName       = xapi.Status.SystemUnit.ProductId();
@@ -32,19 +26,19 @@ xapi.Status.Audio.VolumeChanged += PrintAudioVolume;
 Console.WriteLine("\nPress Enter to show current time on endpoint.");
 Console.WriteLine("Press Ctrl+C to exit.");
 
-_ = Task.Run(async () => {
-    while (true) {
-        ConsoleKeyInfo keyInfo = Console.ReadKey(true);
-        if (keyInfo.Key == ConsoleKey.Enter) {
-            try {
-                string         rawTime = await xapi.Status.Time.SystemTime();
-                DateTimeOffset time    = DateTimeOffset.Parse(rawTime);
-                Console.WriteLine($"Endpoint time: {time:F}");
-            } catch (Exception e) when (e is not OutOfMemoryException) {
-                Console.WriteLine(e);
-            }
+Console.TreatControlCAsInput = true;
+while (true) {
+    ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+    if (keyInfo.Key == ConsoleKey.Enter) {
+        try {
+            string         rawTime = await xapi.Status.Time.SystemTime();
+            DateTimeOffset time    = DateTimeOffset.Parse(rawTime);
+            Console.WriteLine($"Endpoint time: {time:F}");
+        } catch (Exception e) when (e is not OutOfMemoryException) {
+            Console.WriteLine(e);
         }
+    } else if (keyInfo is { Key: ConsoleKey.C, Modifiers: ConsoleModifiers.Control }) {
+        Console.WriteLine("Got Ctrl+C hotkey");
+        break;
     }
-});
-
-exit.Token.WaitHandle.WaitOne();
+}

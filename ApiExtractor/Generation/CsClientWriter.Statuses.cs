@@ -77,13 +77,14 @@ public static partial class CsClientWriter {
                                         internal class Statuses: {{string.Join(", ", interfaceTree.Keys)}} {
                                         
                                             private readonly IXapiTransport transport;
-                                            private readonly FeedbackSubscriber feedbackSubscriber;
+                                            private readonly IFeedbackSubscriber feedbackSubscriber;
                                         
-                                            public Statuses(IXapiTransport transport, FeedbackSubscriber feedbackSubscriber) {
+                                            public Statuses(IXapiTransport transport, IFeedbackSubscriber feedbackSubscriber) {
                                                 this.transport = transport;
                                                 this.feedbackSubscriber = feedbackSubscriber;
                                             }
-
+                                            
+                                        
                                         """);
 
         foreach (DocXStatus xStatus in documentation.statuses) {

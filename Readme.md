@@ -1,30 +1,29 @@
 CSxAPI
 ===
 
-![target version](https://img.shields.io/badge/target%20version-RoomOS%2011.14-%3B?logo=cisco&logoColor=white) [![NuGet](https://img.shields.io/nuget/v/CSxAPI?logo=nuget)](https://www.nuget.org/packages/csxapi)
+[![target version](https://img.shields.io/badge/target%20version-RoomOS%2011.14-%3B?logo=cisco&logoColor=white)](https://www.cisco.com/c/en/us/support/collaboration-endpoints/spark-room-kit-series/products-command-reference-list.html) [![NuGet](https://img.shields.io/nuget/v/CSxAPI?logo=nuget)](https://www.nuget.org/packages/csxapi)
 
-CSxAPI is a strongly-typed API client library for Cisco **xAPI**. It is similar to the official [jsxapi](https://www.npmjs.com/package/jsxapi) implementation, but for .NET instead of JavaScript. xAPI is an API exposed by [Cisco video conferencing devices](https://www.cisco.com/c/en/us/products/collaboration-endpoints/collaboration-room-endpoints/index.html), also known as Collaboration Endpoints, Webex Rooms, Cisco devices, room systems, TelePresence, and codecs.
+CSxAPI is a strongly-typed API client library for **Cisco xAPI**. It is similar to the official [jsxapi](https://www.npmjs.com/package/jsxapi) implementation, but for .NET instead of JavaScript. xAPI is an API exposed by [Cisco video conferencing devices](https://www.cisco.com/c/en/us/products/collaboration-endpoints/collaboration-room-endpoints/index.html), also known as Collaboration Endpoints, Webex Rooms, Cisco devices, room systems, TelePresence, and codecs.
 
 This library can send and receive xCommands, xConfigurations, xStatuses, and xEvents over a WebSocket connection, which is available in Cisco software versions ≥ CE 9.7, and enabled by default in versions ≥ RoomOS 10.8.
 
-<!-- MarkdownTOC autolink="true" bracket="round" autoanchor="false" levels="1,2,3" bullets="1." -->
+<!-- MarkdownTOC autolink="true" bracket="round" autoanchor="false" levels="1,2,3" bullets="1.,-" -->
 
 1. [Requirements](#requirements)
 1. [Installation](#installation)
 1. [API documentation](#api-documentation)
 1. [Connection](#connection)
 1. [Operations](#operations)
-    1. [Commands](#commands)
-    1. [Configurations](#configurations)
-    1. [Statuses](#statuses)
-    1. [Events](#events)
+    - [Commands](#commands)
+    - [Configurations](#configurations)
+    - [Statuses](#statuses)
+    - [Events](#events)
 1. [Error handling](#error-handling)
 1. [Testing](#testing)
 
 <!-- /MarkdownTOC -->
 
 ![Room Kit](https://raw.githubusercontent.com/Aldaviva/CSxAPI/master/.github/images/readme-header.jpg)
-
 
 ## Requirements
 - [.NET 6 or later](https://dotnet.microsoft.com/en-us/download/dotnet)
@@ -36,7 +35,7 @@ This library can send and receive xCommands, xConfigurations, xStatuses, and xEv
     - *Minimum endpoint software versions:* CE 9.7 and RoomOS 10.3
     - *Hardware:* Room, Board, Desk, SX, DX, or MX series are compatible
         - Tested on a Room Kit and a Room Kit Plus PTZ 4K
-        - WebSocket xAPI does not exist on C, CTS, E, EX, IX, MXP, or T series endpoints, therefore they are not compatible
+        - xAPI over WebSocket does not exist on C, CTS, E, EX, IX, MXP, or T series endpoints, therefore they are not compatible
     - *Configuration:* WebSocket protocol must be enabled
         - Enabled by default in endpoint software versions ≥ RoomOS 10.8
         - Enable by running `xConfiguration NetworkServices Websocket: FollowHTTPService` through SSH, Telnet, or an RS-232 serial connection (XACLI); the web admin site; or the XML HTTP API (TXAS)
@@ -47,18 +46,19 @@ This library can send and receive xCommands, xConfigurations, xStatuses, and xEv
     - *Network:* open TCP route from your client to port 443 on the endpoint
 
 ## Installation
-The [**`CSxAPI`** package](https://www.nuget.org/packages/csxapi) is available on NuGet.
+The [**`CSxAPI`**](https://www.nuget.org/packages/csxapi) package is available on NuGet Gallery.
 
 ```ps1
 dotnet add package CSxAPI
 ```
 
 ## API documentation
-For xAPI documentation, refer to the [API Reference Guide PDF](https://www.cisco.com/c/en/us/support/collaboration-endpoints/spark-room-kit-series/products-command-reference-list.html) for the endpoint software version that this CSxAPI release targets.
-
-Alternatively, you may refer to the [online xAPI documentation](https://roomos.cisco.com/xapi).
+For xAPI documentation, refer to the [API Reference Guide PDF](https://www.cisco.com/c/en/us/support/collaboration-endpoints/spark-room-kit-series/products-command-reference-list.html) or [xAPI documentation website](https://roomos.cisco.com/xapi) for the endpoint software version that this CSxAPI release targets.
 
 ## Connection
+
+Construct a new `CSxAPIClient` instance for each Cisco endpoint you want to connect to.
+
 ```cs
 using CSxAPI;
 
@@ -82,7 +82,7 @@ new CSxAPIClient(hostname, username, password) {
 ```
 
 - **`AllowSelfSignedTls`:** set to `true` if connections to WebSocket servers with self-signed or invalid TLS certificates should be allowed, or `false` (default) to require valid certificates that chain to trusted CAs.
-    - If you want a valid TLS certificate for your Cisco endpoint, you may consider using [Let's Encrypt](https://letsencrypt.org) and [Aldaviva/CiscoEndpointCertificateDeployer](https://github.com/Aldaviva/CiscoEndpointCertificateDeployer).
+    - If you want a valid TLS certificate for your Cisco endpoint, you may consider using [Let's Encrypt](https://letsencrypt.org) with [CertifyTheWeb](https://certifytheweb.com) and [Aldaviva/CiscoEndpointCertificateDeployer](https://github.com/Aldaviva/CiscoEndpointCertificateDeployer).
 - **`AutoReconnect`:** set to `false` to disable [automatic reconnections](#reconnections) when the WebSocket is lost
 - **`ConsoleTracing`:** set to `true` to print all JSON-RPC requests and responses sent and received over the WebSocket connection to the console.
 
@@ -99,7 +99,7 @@ Console.WriteLine($"Dialed call {result["CallId"]} (conference {result["Conferen
 
 ### Configurations
 
-You can read and write the value of `xConfiguration` options.
+You can read, write, and listen for changes to the value of `xConfiguration` options.
 
 #### Get
 ```cs
@@ -118,7 +118,7 @@ xapi.Configuration.SystemUnit.NameChanged += newName => Console.WriteLine($"Syst
 
 ### Statuses
 
-You can read the current value of `xStatus` states.
+You can read the current value of `xStatus` states and get notified when they change.
 
 #### Get
 ```cs
@@ -137,7 +137,7 @@ xapi.Status.Call.N.StatusChanged += callStatus => {
 
 ### Events
 
-Aside from [changes to Configuration](#notify) and [Status](#notify-1), you can also listen for an `xEvent` being emitted.
+In addition to [changes to Configuration](#notify) and [Status](#notify-1) values, you can also listen for an `xEvent` being emitted.
 
 ```cs
 xapi.Event.UserInterface.Message.TextInput.Response += response => {
@@ -202,25 +202,25 @@ using Xunit;
 
 public class SampleUnitTest {
 
-    private readonly XAPI _xapi = A.Fake<XAPI>(); // mocked CSxAPIClient
+    private readonly XAPI xapi = A.Fake<XAPI>(); // mocked CSxAPIClient
 
     [Fact]
     public async Task DialAndHangUp() {
         // Arrange
-        A.CallTo(() => _xapi.Command.Dial(A<string>._, null, null, null, null, null, null, null))
+        A.CallTo(() => xapi.Command.Dial(A<string>._, null, null, null, null, null, null, null))
             .Returns(new Dictionary<string, object> { ["CallId"] = 3, ["ConferenceId"] = 2 });
 
         // Act
-        IDictionary<string, object> actual = await _xapi.Command.Dial("10990@bjn.vc");
-        await _xapi.Command.Call.Disconnect((int?) actual["CallId"]);
+        IDictionary<string, object> actual = await xapi.Command.Dial("10990@bjn.vc");
+        await xapi.Command.Call.Disconnect((int?) actual["CallId"]);
 
         // Assert
         actual["CallId"].Should().Be(3);
         actual["ConferenceId"].Should().Be(2);
 
-        A.CallTo(() => _xapi.Command.Dial("10990@bjn.vc", null, null, null, null, null, null, null))
+        A.CallTo(() => xapi.Command.Dial("10990@bjn.vc", null, null, null, null, null, null, null))
             .MustHaveHappened();
-        A.CallTo(() => _xapi.Command.Call.Disconnect(3)).MustHaveHappened();
+        A.CallTo(() => xapi.Command.Call.Disconnect(3)).MustHaveHappened();
     }
 
 }

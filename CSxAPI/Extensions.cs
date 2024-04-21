@@ -3,22 +3,38 @@ using System.Text.RegularExpressions;
 
 namespace CSxAPI;
 
+/// <summary>
+/// Helpful extension methods
+/// </summary>
 public static class Extensions {
 
     private static readonly Regex Underscore = new("_");
 
     private static readonly IDictionary<ConfigurationTimeZone, TimeZoneInfo> TimeZoneInfoCache = new Dictionary<ConfigurationTimeZone, TimeZoneInfo>();
 
-    internal static string JoinPath(this object[] path) {
-        return string.Join(' ', path);
-    }
+    internal static string JoinPath(this object[] path) => string.Join(' ', path);
 
+    /// <summary>
+    /// Remove <c>null</c> values from a dictionary.
+    /// </summary>
+    /// <typeparam name="TKey">key type of the dictionary</typeparam>
+    /// <typeparam name="TValue">value type of the dictionary</typeparam>
+    /// <param name="dictionary">Dictionary with possible <c>null</c> values. This dictionary and its values are not modified by this method.</param>
+    /// <returns>A copy of <paramref name="dictionary"/> where all the <c>null</c> values have been removed.</returns>
     public static IDictionary<TKey, TValue> Compact<TKey, TValue>(this IDictionary<TKey, TValue?> dictionary) where TKey: notnull where TValue: class {
         return dictionary.Where(entry => entry.Value != null)
             .ToDictionary(entry => entry.Key, entry => entry.Value!);
     }
 
-    /// <exception cref="TimeZoneNotFoundException">if the Cisco time zone does not map to a .NET time zone</exception>
+    /// <summary>
+    /// <para>Convert a time zone from the Cisco xAPI to the equivalent .NET <see cref="TimeZoneInfo"/>.</para>
+    /// <para>For the inverse operation, you can convert .NET <see cref="TimeZoneInfo"/> to XAPI <see cref="ConfigurationTimeZone"/> using <see cref="ToXAPITimeZone"/>.</para>
+    /// </summary>
+    /// <seealso cref="ToXAPITimeZone"/>
+    /// <param name="xapiTimeZone">A time zone from <c>XAPI.Configuration.Time.Zone()</c>.</param>
+    /// <returns>A .NET BCL <see cref="TimeZoneInfo"/> that represents the same time zone as <paramref name="xapiTimeZone"/>.</returns>
+    /// <exception cref="TimeZoneNotFoundException">If the Cisco time zone does not map to a .NET time zone. This should not happen unless Cisco adds new time zones in future software versions, in
+    /// which case you should file an issue at https://github.com/Aldaviva/CSxAPI/issues</exception>
     public static TimeZoneInfo ToTimeZoneInfo(this ConfigurationTimeZone xapiTimeZone) {
         if (!TimeZoneInfoCache.TryGetValue(xapiTimeZone, out TimeZoneInfo? timeZone)) {
             timeZone = xapiTimeZone switch {
@@ -119,83 +135,88 @@ public static class Extensions {
         return timeZone;
     }
 
-    public static ConfigurationTimeZone ToXAPITimeZone(this TimeZoneInfo dotnetTimeZone) {
-        return dotnetTimeZone.Id switch {
-            "Africa/Porto-Novo"                => ConfigurationTimeZone.Africa_Porto_Novo,
-            "America/Argentina/Buenos_Aires"   => ConfigurationTimeZone.America_Argentina_Buenos_Aires,
-            "America/Argentina/Catamarca"      => ConfigurationTimeZone.America_Argentina_Catamarca,
-            "America/Argentina/ComodRivadavia" => ConfigurationTimeZone.America_Argentina_ComodRivadavia,
-            "America/Argentina/Cordoba"        => ConfigurationTimeZone.America_Argentina_Cordoba,
-            "America/Argentina/Jujuy"          => ConfigurationTimeZone.America_Argentina_Jujuy,
-            "America/Argentina/La_Rioja"       => ConfigurationTimeZone.America_Argentina_La_Rioja,
-            "America/Argentina/Mendoza"        => ConfigurationTimeZone.America_Argentina_Mendoza,
-            "America/Argentina/Rio_Gallegos"   => ConfigurationTimeZone.America_Argentina_Rio_Gallegos,
-            "America/Argentina/Salta"          => ConfigurationTimeZone.America_Argentina_Salta,
-            "America/Argentina/San_Juan"       => ConfigurationTimeZone.America_Argentina_San_Juan,
-            "America/Argentina/San_Luis"       => ConfigurationTimeZone.America_Argentina_San_Luis,
-            "America/Argentina/Tucuman"        => ConfigurationTimeZone.America_Argentina_Tucuman,
-            "America/Argentina/Ushuaia"        => ConfigurationTimeZone.America_Argentina_Ushuaia,
-            "America/Blanc-Sablon"             => ConfigurationTimeZone.America_Blanc_Sablon,
-            "America/Indiana/Indianapolis"     => ConfigurationTimeZone.America_Indiana_Indianapolis,
-            "America/Indiana/Knox"             => ConfigurationTimeZone.America_Indiana_Knox,
-            "America/Indiana/Marengo"          => ConfigurationTimeZone.America_Indiana_Marengo,
-            "America/Indiana/Petersburg"       => ConfigurationTimeZone.America_Indiana_Petersburg,
-            "America/Indiana/Tell_City"        => ConfigurationTimeZone.America_Indiana_Tell_City,
-            "America/Indiana/Vevay"            => ConfigurationTimeZone.America_Indiana_Vevay,
-            "America/Indiana/Vincennes"        => ConfigurationTimeZone.America_Indiana_Vincennes,
-            "America/Indiana/Winamac"          => ConfigurationTimeZone.America_Indiana_Winamac,
-            "America/Kentucky/Louisville"      => ConfigurationTimeZone.America_Kentucky_Louisville,
-            "America/Kentucky/Monticello"      => ConfigurationTimeZone.America_Kentucky_Monticello,
-            "America/North_Dakota/Beulah"      => ConfigurationTimeZone.America_North_Dakota_Beulah,
-            "America/North_Dakota/Center"      => ConfigurationTimeZone.America_North_Dakota_Center,
-            "America/North_Dakota/New_Salem"   => ConfigurationTimeZone.America_North_Dakota_New_Salem,
-            "America/Port-au-Prince"           => ConfigurationTimeZone.America_Port_au_Prince,
-            "Asia/Ust-Nera"                    => ConfigurationTimeZone.Asia_Ust_Nera,
-            "Etc/GMT+0"                        => ConfigurationTimeZone.Etc_GMT_Plus_0,
-            "Etc/GMT+1"                        => ConfigurationTimeZone.Etc_GMT_Plus_1,
-            "Etc/GMT+10"                       => ConfigurationTimeZone.Etc_GMT_Plus_10,
-            "Etc/GMT+11"                       => ConfigurationTimeZone.Etc_GMT_Plus_11,
-            "Etc/GMT+12"                       => ConfigurationTimeZone.Etc_GMT_Plus_12,
-            "Etc/GMT+2"                        => ConfigurationTimeZone.Etc_GMT_Plus_2,
-            "Etc/GMT+3"                        => ConfigurationTimeZone.Etc_GMT_Plus_3,
-            "Etc/GMT+4"                        => ConfigurationTimeZone.Etc_GMT_Plus_4,
-            "Etc/GMT+5"                        => ConfigurationTimeZone.Etc_GMT_Plus_5,
-            "Etc/GMT+6"                        => ConfigurationTimeZone.Etc_GMT_Plus_6,
-            "Etc/GMT+7"                        => ConfigurationTimeZone.Etc_GMT_Plus_7,
-            "Etc/GMT+8"                        => ConfigurationTimeZone.Etc_GMT_Plus_8,
-            "Etc/GMT+9"                        => ConfigurationTimeZone.Etc_GMT_Plus_9,
-            "Etc/GMT-0"                        => ConfigurationTimeZone.Etc_GMT_Minus_0,
-            "Etc/GMT-1"                        => ConfigurationTimeZone.Etc_GMT_Minus_1,
-            "Etc/GMT-10"                       => ConfigurationTimeZone.Etc_GMT_Minus_10,
-            "Etc/GMT-11"                       => ConfigurationTimeZone.Etc_GMT_Minus_11,
-            "Etc/GMT-12"                       => ConfigurationTimeZone.Etc_GMT_Minus_12,
-            "Etc/GMT-13"                       => ConfigurationTimeZone.Etc_GMT_Minus_13,
-            "Etc/GMT-14"                       => ConfigurationTimeZone.Etc_GMT_Minus_14,
-            "Etc/GMT-2"                        => ConfigurationTimeZone.Etc_GMT_Minus_2,
-            "Etc/GMT-3"                        => ConfigurationTimeZone.Etc_GMT_Minus_3,
-            "Etc/GMT-4"                        => ConfigurationTimeZone.Etc_GMT_Minus_4,
-            "Etc/GMT-5"                        => ConfigurationTimeZone.Etc_GMT_Minus_5,
-            "Etc/GMT-6"                        => ConfigurationTimeZone.Etc_GMT_Minus_6,
-            "Etc/GMT-7"                        => ConfigurationTimeZone.Etc_GMT_Minus_7,
-            "Etc/GMT-8"                        => ConfigurationTimeZone.Etc_GMT_Minus_8,
-            "Etc/GMT-9"                        => ConfigurationTimeZone.Etc_GMT_Minus_9,
-            "GB-Eire"                          => ConfigurationTimeZone.GB_Eire,
-            "GMT+0"                            => ConfigurationTimeZone.GMT_Plus_0,
-            "GMT-0"                            => ConfigurationTimeZone.GMT_Minus_0,
-            "NZ-CHAT"                          => ConfigurationTimeZone.NZ_CHAT,
-            "US/East-Indiana"                  => ConfigurationTimeZone.US_East_Indiana,
-            "US/Indiana-Starke"                => ConfigurationTimeZone.US_Indiana_Starke,
-            "W-SU"                             => ConfigurationTimeZone.W_SU,
-            _ => Enum.TryParse(Regex.Replace(dotnetTimeZone.Id, "[^a-z0-9_]", match => match.Value switch {
-                "."                                        => "_",
-                "/"                                        => "_",
-                "+"                                        => "_Plus_",
-                "-" when dotnetTimeZone.Id.Contains("GMT") => "_Minus_",
-                "-"                                        => "_",
-                _                                          => ""
-            }, RegexOptions.IgnoreCase), out ConfigurationTimeZone parsed) ? parsed
-                : throw new TimeZoneNotFoundException($"Could not convert .NET time zone with ID {dotnetTimeZone.Id} into an xAPI time zone")
-        };
-    }
+    /// <summary>
+    /// Convert a .NET BCL <see cref="TimeZoneInfo"/> to a Cisco xAPI time zone, for use with <c>XAPI.Configuration.Time.Zone(Configuration)</c>.
+    /// </summary>
+    /// <seealso cref="ToTimeZoneInfo"/>
+    /// <param name="dotnetTimeZone">a .NET time zone</param>
+    /// <returns>The equivalent Cisco xAPI <see cref="ConfigurationTimeZone"/> that represents the same time zone</returns>
+    /// <exception cref="TimeZoneNotFoundException">if Cisco xAPI does not contain a time zone that corresponds to the .NET time zone, such as Microsoft's notorious, fake <c>Mid-Atlantic Standard Time</c></exception>
+    public static ConfigurationTimeZone ToXAPITimeZone(this TimeZoneInfo dotnetTimeZone) => dotnetTimeZone.Id switch {
+        "Africa/Porto-Novo"                => ConfigurationTimeZone.Africa_Porto_Novo,
+        "America/Argentina/Buenos_Aires"   => ConfigurationTimeZone.America_Argentina_Buenos_Aires,
+        "America/Argentina/Catamarca"      => ConfigurationTimeZone.America_Argentina_Catamarca,
+        "America/Argentina/ComodRivadavia" => ConfigurationTimeZone.America_Argentina_ComodRivadavia,
+        "America/Argentina/Cordoba"        => ConfigurationTimeZone.America_Argentina_Cordoba,
+        "America/Argentina/Jujuy"          => ConfigurationTimeZone.America_Argentina_Jujuy,
+        "America/Argentina/La_Rioja"       => ConfigurationTimeZone.America_Argentina_La_Rioja,
+        "America/Argentina/Mendoza"        => ConfigurationTimeZone.America_Argentina_Mendoza,
+        "America/Argentina/Rio_Gallegos"   => ConfigurationTimeZone.America_Argentina_Rio_Gallegos,
+        "America/Argentina/Salta"          => ConfigurationTimeZone.America_Argentina_Salta,
+        "America/Argentina/San_Juan"       => ConfigurationTimeZone.America_Argentina_San_Juan,
+        "America/Argentina/San_Luis"       => ConfigurationTimeZone.America_Argentina_San_Luis,
+        "America/Argentina/Tucuman"        => ConfigurationTimeZone.America_Argentina_Tucuman,
+        "America/Argentina/Ushuaia"        => ConfigurationTimeZone.America_Argentina_Ushuaia,
+        "America/Blanc-Sablon"             => ConfigurationTimeZone.America_Blanc_Sablon,
+        "America/Indiana/Indianapolis"     => ConfigurationTimeZone.America_Indiana_Indianapolis,
+        "America/Indiana/Knox"             => ConfigurationTimeZone.America_Indiana_Knox,
+        "America/Indiana/Marengo"          => ConfigurationTimeZone.America_Indiana_Marengo,
+        "America/Indiana/Petersburg"       => ConfigurationTimeZone.America_Indiana_Petersburg,
+        "America/Indiana/Tell_City"        => ConfigurationTimeZone.America_Indiana_Tell_City,
+        "America/Indiana/Vevay"            => ConfigurationTimeZone.America_Indiana_Vevay,
+        "America/Indiana/Vincennes"        => ConfigurationTimeZone.America_Indiana_Vincennes,
+        "America/Indiana/Winamac"          => ConfigurationTimeZone.America_Indiana_Winamac,
+        "America/Kentucky/Louisville"      => ConfigurationTimeZone.America_Kentucky_Louisville,
+        "America/Kentucky/Monticello"      => ConfigurationTimeZone.America_Kentucky_Monticello,
+        "America/North_Dakota/Beulah"      => ConfigurationTimeZone.America_North_Dakota_Beulah,
+        "America/North_Dakota/Center"      => ConfigurationTimeZone.America_North_Dakota_Center,
+        "America/North_Dakota/New_Salem"   => ConfigurationTimeZone.America_North_Dakota_New_Salem,
+        "America/Port-au-Prince"           => ConfigurationTimeZone.America_Port_au_Prince,
+        "Asia/Ust-Nera"                    => ConfigurationTimeZone.Asia_Ust_Nera,
+        "Etc/GMT+0"                        => ConfigurationTimeZone.Etc_GMT_Plus_0,
+        "Etc/GMT+1"                        => ConfigurationTimeZone.Etc_GMT_Plus_1,
+        "Etc/GMT+10"                       => ConfigurationTimeZone.Etc_GMT_Plus_10,
+        "Etc/GMT+11"                       => ConfigurationTimeZone.Etc_GMT_Plus_11,
+        "Etc/GMT+12"                       => ConfigurationTimeZone.Etc_GMT_Plus_12,
+        "Etc/GMT+2"                        => ConfigurationTimeZone.Etc_GMT_Plus_2,
+        "Etc/GMT+3"                        => ConfigurationTimeZone.Etc_GMT_Plus_3,
+        "Etc/GMT+4"                        => ConfigurationTimeZone.Etc_GMT_Plus_4,
+        "Etc/GMT+5"                        => ConfigurationTimeZone.Etc_GMT_Plus_5,
+        "Etc/GMT+6"                        => ConfigurationTimeZone.Etc_GMT_Plus_6,
+        "Etc/GMT+7"                        => ConfigurationTimeZone.Etc_GMT_Plus_7,
+        "Etc/GMT+8"                        => ConfigurationTimeZone.Etc_GMT_Plus_8,
+        "Etc/GMT+9"                        => ConfigurationTimeZone.Etc_GMT_Plus_9,
+        "Etc/GMT-0"                        => ConfigurationTimeZone.Etc_GMT_Minus_0,
+        "Etc/GMT-1"                        => ConfigurationTimeZone.Etc_GMT_Minus_1,
+        "Etc/GMT-10"                       => ConfigurationTimeZone.Etc_GMT_Minus_10,
+        "Etc/GMT-11"                       => ConfigurationTimeZone.Etc_GMT_Minus_11,
+        "Etc/GMT-12"                       => ConfigurationTimeZone.Etc_GMT_Minus_12,
+        "Etc/GMT-13"                       => ConfigurationTimeZone.Etc_GMT_Minus_13,
+        "Etc/GMT-14"                       => ConfigurationTimeZone.Etc_GMT_Minus_14,
+        "Etc/GMT-2"                        => ConfigurationTimeZone.Etc_GMT_Minus_2,
+        "Etc/GMT-3"                        => ConfigurationTimeZone.Etc_GMT_Minus_3,
+        "Etc/GMT-4"                        => ConfigurationTimeZone.Etc_GMT_Minus_4,
+        "Etc/GMT-5"                        => ConfigurationTimeZone.Etc_GMT_Minus_5,
+        "Etc/GMT-6"                        => ConfigurationTimeZone.Etc_GMT_Minus_6,
+        "Etc/GMT-7"                        => ConfigurationTimeZone.Etc_GMT_Minus_7,
+        "Etc/GMT-8"                        => ConfigurationTimeZone.Etc_GMT_Minus_8,
+        "Etc/GMT-9"                        => ConfigurationTimeZone.Etc_GMT_Minus_9,
+        "GB-Eire"                          => ConfigurationTimeZone.GB_Eire,
+        "GMT+0"                            => ConfigurationTimeZone.GMT_Plus_0,
+        "GMT-0"                            => ConfigurationTimeZone.GMT_Minus_0,
+        "NZ-CHAT"                          => ConfigurationTimeZone.NZ_CHAT,
+        "US/East-Indiana"                  => ConfigurationTimeZone.US_East_Indiana,
+        "US/Indiana-Starke"                => ConfigurationTimeZone.US_Indiana_Starke,
+        "W-SU"                             => ConfigurationTimeZone.W_SU,
+        _ => Enum.TryParse(Regex.Replace(dotnetTimeZone.Id, "[^a-z0-9_]", match => match.Value switch {
+            "."                                        => "_",
+            "/"                                        => "_",
+            "+"                                        => "_Plus_",
+            "-" when dotnetTimeZone.Id.Contains("GMT") => "_Minus_",
+            "-"                                        => "_",
+            _                                          => ""
+        }, RegexOptions.IgnoreCase), out ConfigurationTimeZone parsed) ? parsed
+            : throw new TimeZoneNotFoundException($"Could not convert .NET time zone with ID {dotnetTimeZone.Id} (offset {dotnetTimeZone.BaseUtcOffset}) into an xAPI time zone")
+    };
 
 }

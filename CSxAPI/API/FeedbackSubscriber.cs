@@ -9,15 +9,68 @@ namespace CSxAPI.API;
 /// <summary>
 /// Keep track of which numeric subscription ID (from Cisco) belongs to which callback (from the library consumer).
 /// </summary>
-internal class FeedbackSubscriber: IDisposable {
+public interface IFeedbackSubscriber: IDisposable {
+
+    /// <summary>
+    /// How long to wait to subscribe to a feedback event
+    /// </summary>
+    TimeSpan Timeout { get; set; }
+
+    /// <summary>
+    /// Subscribe to a feedback event for <c>xEvent</c>, <c>xConfiguration</c>, or <c>xStatus</c> notifications.
+    /// </summary>
+    /// <typeparam name="TSerialized">Type returned by the JSON WebSocket response, either <see cref="int"/> or <see cref="string"/></typeparam>
+    /// <typeparam name="TDeserialized">Type of the value passed to the <paramref name="callback"/>, such as <see cref="int"/>, <see cref="string"/>, or an <see cref="Enum"/>.</typeparam>
+    /// <param name="path">Path of the feedback subscription, such as <c>[ "xConfiguration", "Audio", "DefaultVolume" ]</c></param>
+    /// <param name="callback">Run when the event is fired</param>
+    /// <param name="deserialize">Convert the serialized JSON data into the parameter to <paramref name="callback"/></param>
+    /// <param name="notifyCurrentValue"><c>true</c> to also fire an event with the current value, or <c>false</c> to not do that. Either way, future events will be subscribed to.</param>
+    Task Subscribe<TSerialized, TDeserialized>(object[] path, FeedbackCallback<TDeserialized> callback, Func<TSerialized, TDeserialized> deserialize,
+                                               bool     notifyCurrentValue = false);
+
+    /// <summary>
+    /// Subscribe to a feedback event for <c>xEvent</c>, <c>xConfiguration</c>, or <c>xStatus</c> notifications.
+    /// </summary>
+    /// <typeparam name="TDeserialized">Type of the value passed to the <paramref name="callback"/>, such as <see cref="int"/>, <see cref="string"/>, or an <see cref="Enum"/>.</typeparam>
+    /// <param name="path">Path of the feedback subscription, such as <c>[ "xConfiguration", "Audio", "DefaultVolume" ]</c></param>
+    /// <param name="callback">Run when the event is fired</param>
+    /// <param name="deserialize">Convert the serialized JSON data into the parameter to <paramref name="callback"/></param>
+    /// <param name="notifyCurrentValue"><c>true</c> to also fire an event with the current value, or <c>false</c> to not do that. Either way, future events will be subscribed to.</param>
+    Task Subscribe<TDeserialized>(object[] path, FeedbackCallback<TDeserialized> callback, Func<JObject, TDeserialized> deserialize, bool notifyCurrentValue = false);
+
+    /// <summary>
+    /// Subscribe to a feedback event for <c>xEvent</c>, <c>xConfiguration</c>, or <c>xStatus</c> notifications.
+    /// </summary>
+    /// <param name="path">Path of the feedback subscription, such as <c>[ "xConfiguration", "Audio", "DefaultVolume" ]</c></param>
+    /// <param name="callback">Run when the event is fired</param>
+    Task Subscribe(object[] path, FeedbackCallback callback);
+
+    /// <summary>
+    /// Deregister from an existing feedback subscription so no more events from it will be fired.
+    /// </summary>
+    /// <typeparam name="T">Type of the value that had been passed to the <paramref name="callback"/></typeparam>
+    /// <param name="callback">Run when the event was fired</param>
+    Task Unsubscribe<T>(FeedbackCallback<T> callback);
+
+    /// <summary>
+    /// Deregister from an existing feedback subscription so no more events from it will be fired.
+    /// </summary>
+    /// <param name="callback">Run when the event was fired</param>
+    Task Unsubscribe(FeedbackCallback callback);
+
+}
+
+/// <inheritdoc cref="IFeedbackSubscriber"/>>
+internal class FeedbackSubscriber: IFeedbackSubscriber {
 
     private readonly ConcurrentDictionary<long, Subscription> _subscribers = new(); // key is FeedbackCallback<T>, value is subscription ID
-    private readonly IWebSocketXapi                           _transport;
-    private readonly JsonSerializer                           _jsonSerializer = JsonSerializer.CreateDefault();
+
+    private readonly IWebSocketXapi _transport;
+    private readonly JsonSerializer _jsonSerializer = JsonSerializer.CreateDefault();
 
     private bool _reconnecting;
 
-    public TimeSpan Timeout { get; } = TimeSpan.FromSeconds(5);
+    public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(5);
 
     public FeedbackSubscriber(IWebSocketXapi transport) {
         _transport = transport;
@@ -104,5 +157,12 @@ internal class FeedbackSubscriber: IDisposable {
 
 }
 
+/// <summary>
+/// The signature of a method used to subscribe to notifications from xAPI, such as <c>xFeedback</c> events.
+/// </summary>
 public delegate void FeedbackCallback();
+
+/// <summary>
+/// The signature of a method used to subscribe to notifications from xAPI, such as <c>xFeedback</c> events or changes to <c>xConfiguration</c> or <c>xStatus</c> values.
+/// </summary>
 public delegate void FeedbackCallback<in T>(T newValue);

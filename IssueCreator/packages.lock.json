@@ -22,9 +22,9 @@
       },
       "Octokit": {
         "type": "Direct",
-        "requested": "[11.0.0, )",
-        "resolved": "11.0.0",
-        "contentHash": "VrwqeriUcbM2Ziqi5/0k1ESwFzJJNDoxZ82iJqmnD9PXqiy54fpiBga17oxCSEri2Rk7jYd6TI4R7BZ/4V/2zA=="
+        "requested": "[11.0.1, )",
+        "resolved": "11.0.1",
+        "contentHash": "fpwF/DxMJyGS+pIXDKQozx0wCIpOfG8VDr10ls+m9Gn9Lz8GslhhApxkKD9JCNO60HRUeMJsedsAS24gCjTD7Q=="
       },
       "System.ComponentModel.Annotations": {
         "type": "Transitive",

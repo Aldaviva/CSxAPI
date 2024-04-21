@@ -12,6 +12,12 @@ using NetworkException = CSxAPI.API.Exceptions.NetworkException;
 
 namespace CSxAPI.Transport;
 
+/// <summary>
+/// <para>WebSocket client connection transport for Cisco xAPI.</para>
+/// <para>For the top-level strongly-typed xAPI client, see <see cref="CSxAPIClient"/> instead.</para>
+/// </summary>
+/// <param name="hostname">IP address or FQDN of the Cisco endpoint</param>
+/// <param name="credentials">username and password for the Cisco endpoint</param>
 public class WebSocketXapi(string hostname, NetworkCredential credentials): IWebSocketXapi {
 
     /// <inheritdoc />
@@ -38,6 +44,12 @@ public class WebSocketXapi(string hostname, NetworkCredential credentials): IWeb
         }
     }
 
+    /// <summary>
+    /// <para>How long to wait between reconnection attempts to a disconnected endpoint. The first reconnection attempt is always immediate; this is for subsequent attempts if it still can't connect after the first attempt.</para>
+    /// <para>Defaults to 2 seconds. Only used when <see cref="AutoReconnect"/> is <c>true</c>.</para>
+    /// </summary>
+    public TimeSpan ReconnectionDelay { get; } = TimeSpan.FromSeconds(2);
+
     /// <inheritdoc />
     public event IWebSocketClient.IsConnectedChangedHandler? IsConnectedChanged;
 
@@ -48,7 +60,7 @@ public class WebSocketXapi(string hostname, NetworkCredential credentials): IWeb
 
     private bool                  _consoleTracing;
     private JsonRpc?              _jsonRpc;
-    private ClientWebSocket       _webSocket = null!;
+    private ClientWebSocket?      _webSocket;
     private bool                  _disposed;
     private TaskCompletionSource? _reconnected;
 
@@ -98,6 +110,7 @@ public class WebSocketXapi(string hostname, NetworkCredential credentials): IWeb
         if (!_disposed) {
             IsConnected = false;
             IsConnectedChanged?.Invoke(false, args);
+            DisposeWebSocket();
 
             if (AutoReconnect) {
                 _reconnected = new TaskCompletionSource();
@@ -106,7 +119,7 @@ public class WebSocketXapi(string hostname, NetworkCredential credentials): IWeb
                     try {
                         await Connect().ConfigureAwait(false);
                     } catch (WebSocketException) {
-                        await Task.Delay(2000).ConfigureAwait(false);
+                        await Task.Delay(ReconnectionDelay).ConfigureAwait(false);
                         // try again
                     }
                 }
@@ -135,27 +148,32 @@ public class WebSocketXapi(string hostname, NetworkCredential credentials): IWeb
         }
     }
 
-    public Task<T> Get<T>(params object[] path) {
+    private Task<T> Get<T>(params object[] path) {
         return _jsonRpc!.InvokeWithParameterObjectAsync<T>("xGet", new { Path = NormalizePath(path) });
     }
 
-    public Task<T> Query<T>(params object[] path) {
+    /*private Task<T> Query<T>(params object[] path) {
         return _jsonRpc!.InvokeWithParameterObjectAsync<T>("xQuery", new { Path = NormalizePath(path) });
-    }
+    }*/
 
-    public Task<bool> Set(IEnumerable<object> path, object value) {
+    private Task<bool> Set(IEnumerable<object> path, object value) {
         return _jsonRpc!.InvokeWithParameterObjectAsync<bool>("xSet", new { Path = NormalizePath(path), Value = value });
     }
 
-    public Task<T> Command<T>(IEnumerable<object> path, object? parameters = null) {
+    private Task<T> Command<T>(IEnumerable<object> path, object? parameters = null) {
         return _jsonRpc!.InvokeWithParameterObjectAsync<T>(GetCommandMethod(path), parameters);
     }
 
-    public Task Command(IEnumerable<object> path, object? parameters = null) {
+    /*private Task Command(IEnumerable<object> path, object? parameters = null) {
         return _jsonRpc!.InvokeWithParameterObjectAsync(GetCommandMethod(path), parameters);
-    }
+    }*/
 
+    /// <inheritdoc />
     public async Task<long> Subscribe(object[] path, bool notifyCurrentValue = false) {
+        if (_webSocket == null) {
+            await Connect().ConfigureAwait(false);
+        }
+
         try {
             IDictionary<string, object> subscription = await _jsonRpc!.InvokeWithParameterObjectAsync<IDictionary<string, object>>("xFeedback/Subscribe", new {
                 Query              = NormalizePath(path),
@@ -173,7 +191,7 @@ public class WebSocketXapi(string hostname, NetworkCredential credentials): IWeb
     }
 
     /// <inheritdoc />
-    public Task<bool> Unsubscribe(long subscriptionId) {
+    public Task Unsubscribe(long subscriptionId) {
         return _jsonRpc!.InvokeWithParameterObjectAsync<bool>("xFeedback/Unsubscribe", new { Id = subscriptionId });
     }
 
@@ -190,6 +208,10 @@ public class WebSocketXapi(string hostname, NetworkCredential credentials): IWeb
 
     /// <inheritdoc />
     public async Task<T> GetConfigurationOrStatus<T>(object[] path) {
+        if (_webSocket == null) {
+            await Connect().ConfigureAwait(false);
+        }
+
         try {
             return await Get<T>(path).ConfigureAwait(false);
         } catch (RemoteMethodNotFoundException e) {
@@ -206,6 +228,10 @@ public class WebSocketXapi(string hostname, NetworkCredential credentials): IWeb
 
     /// <inheritdoc />
     public async Task SetConfiguration(object[] path, object newValue) {
+        if (_webSocket == null) {
+            await Connect().ConfigureAwait(false);
+        }
+
         try {
             await Set(path, newValue).ConfigureAwait(false);
         } catch (RemoteMethodNotFoundException e) {
@@ -228,6 +254,10 @@ public class WebSocketXapi(string hostname, NetworkCredential credentials): IWeb
 
     /// <inheritdoc />
     public async Task<IDictionary<string, object>> CallMethod(object[] path, IDictionary<string, object?>? parameters) {
+        if (_webSocket == null) {
+            await Connect().ConfigureAwait(false);
+        }
+
         try {
             return await Command<IDictionary<string, object>>(path, parameters?.Compact()).ConfigureAwait(false);
         } catch (RemoteMethodNotFoundException e) {
@@ -257,7 +287,8 @@ public class WebSocketXapi(string hostname, NetworkCredential credentials): IWeb
     }
 
     private void DisposeWebSocket() {
-        _webSocket.Dispose();
+        _webSocket?.Dispose();
+        _webSocket = null;
         if (_jsonRpc != null) {
             _jsonRpc.Disconnected -= OnDisconnection;
             _jsonRpc.Dispose();
