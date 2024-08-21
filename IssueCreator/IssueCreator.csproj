@@ -8,7 +8,7 @@
         <LangVersion>latest</LangVersion>
         <RollForward>major</RollForward>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-        <Version>1.0.2</Version> <!-- Product version -->
+        <Version>1.0.3</Version> <!-- Product version -->
         <AssemblyName>CiscoEndpointDocumentationReleaseIssueCreator</AssemblyName> <!-- Executable base filename -->
         <AssemblyTitle>Cisco Endpoint Documentation Release Issue Creator</AssemblyTitle> <!-- File description -->
         <Product>$(AssemblyTitle)</Product> <!-- Product name -->
@@ -23,7 +23,7 @@
     <ItemGroup>
         <PackageReference Include="AngleSharp" Version="1.1.2" />
         <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
-        <PackageReference Include="Octokit" Version="11.0.1" />
+        <PackageReference Include="Octokit" Version="13.0.1" />
     </ItemGroup>
 
 </Project>

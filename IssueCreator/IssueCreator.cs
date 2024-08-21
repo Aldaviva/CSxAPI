@@ -1,8 +1,11 @@
 ﻿using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
+using AngleSharp.Io;
 using McMaster.Extensions.CommandLineUtils;
 using Octokit;
+using System.Globalization;
+using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
@@ -10,14 +13,16 @@ namespace IssueCreator;
 
 internal class IssueCreator {
 
-    private const string RepositoryOwner = "Aldaviva";
-    private const string RepositoryName  = "CSxAPI";
-    private const string IssueLabel      = "upstream update";
+    private const string RepositoryOwner      = "Aldaviva";
+    private const string RepositoryName       = "CSxAPI";
+    private const string IssueLabel           = "upstream update";
+    private const string UserAgentHeaderValue = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
     private static readonly AssemblyName Assembly = System.Reflection.Assembly.GetExecutingAssembly().GetName();
     private static readonly Url DocumentationListPageLocation = new("https://www.cisco.com/c/en/us/support/collaboration-endpoints/spark-room-kit-series/products-command-reference-list.html");
+    private static readonly StringComparer StringComparer = StringComparer.Create(CultureInfo.GetCultureInfo("en-US"), true);
 
-    private readonly IBrowsingContext _anglesharp = BrowsingContext.New(Configuration.Default.WithDefaultLoader());
+    private readonly IBrowsingContext _anglesharp = BrowsingContext.New(Configuration.Default.With(new DefaultHttpRequester(UserAgentHeaderValue)).WithDefaultLoader());
     private readonly IGitHubClient    _gitHubClient;
     private readonly bool             _isDryRun;
 
@@ -46,6 +51,7 @@ internal class IssueCreator {
         PublishedDocumentation latestDocumentation = await findLatestDocumentation();
         Console.WriteLine($"Latest documentation version: {latestDocumentation.Name}");
 
+        Console.WriteLine("Checking existing GitHub issues...");
         if (await findIssueForLatestDocumentation(latestDocumentation) is not { } existingIssue) {
             Console.WriteLine("No existing issues found, so creating a new issue...");
             if (!_isDryRun) {
@@ -61,6 +67,10 @@ internal class IssueCreator {
 
     private async Task<PublishedDocumentation> findLatestDocumentation() {
         using IDocument listPage = await _anglesharp.OpenAsync(DocumentationListPageLocation);
+
+        if (listPage.StatusCode >= HttpStatusCode.BadRequest) {
+            throw new ApplicationException($"Fetching documentation list page failed with status code {listPage.StatusCode}");
+        }
 
         IHtmlAnchorElement latestDocumentationLink = listPage.QuerySelectorAll(".heading")
             .First(element => element.Text().StartsWith("Cisco "))
@@ -78,14 +88,14 @@ internal class IssueCreator {
             State  = ItemStateFilter.All
         });
         string expectedIssueTitle = GetIssueTitle(documentation.Name);
-        return upstreamUpdateIssues.FirstOrDefault(issue => issue.Title == expectedIssueTitle);
+        return upstreamUpdateIssues.FirstOrDefault(issue => StringComparer.Equals(issue.Title, expectedIssueTitle));
     }
 
     private async Task<Issue> CreateIssue(PublishedDocumentation documentation) => await _gitHubClient.Issue.Create(RepositoryOwner, RepositoryName,
         new NewIssue(GetIssueTitle(documentation.Name)) {
             Assignees = { RepositoryOwner },
             Labels    = { IssueLabel },
-            // ⚠ Warning: The first line of the Body string must remain unchanged because an email filter matches it
+            // ⚠ Warning: The first line of the Body string must remain unchanged because an email filter matches it in my MDaemon user account
             Body = $"""
                     Cisco has released documentation for a new on-premises endpoint software release.
 
