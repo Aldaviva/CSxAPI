@@ -21,9 +21,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AngleSharp" Version="1.1.2" />
+        <PackageReference Include="AngleSharp" Version="1.2.0" />
         <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
-        <PackageReference Include="Octokit" Version="13.0.1" />
+        <PackageReference Include="Octokit" Version="14.0.0" />
     </ItemGroup>
 
 </Project>

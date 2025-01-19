@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
-        <Version>11.14.0.0</Version>
+        <Version>11.20.0.0</Version>
         <Authors>Ben Hutchison</Authors>
         <Copyright>© 2025 $(Authors)</Copyright>
         <Company>$(Authors)</Company>
@@ -13,7 +13,7 @@
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
         <ImplicitUsings>true</ImplicitUsings>
-        <NoWarn>VSTHRD200, VSTHRD101, VSTHRD002, CS8524, IDE0079</NoWarn>
+        <NoWarn>VSTHRD200, VSTHRD101, VSTHRD002, VSTHRD003, CS8524, IDE0079</NoWarn>
         <RootNamespace>CSxAPI</RootNamespace>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
         <Description>$(AssemblyTitle)</Description>
@@ -34,7 +34,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="StreamJsonRpc" Version="2.19.27" />
+        <PackageReference Include="StreamJsonRpc" Version="2.20.20" />
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
     </ItemGroup>
 
