@@ -40,7 +40,7 @@ public static partial class CsClientWriter {
                                                               /// </summary>
                                                           {string.Join("\r\n", command.parameters.Select(param => $"    /// <param name=\"{getArgumentName(param, true)}\">{param.description.NewLinesToParagraphs()}</param>"))}
                                                               /// <returns>A <see cref="Task&lt;T&gt;"/> that will complete asynchronously with the response from the device.</returns>
-                                                              /// <exception cref="CommandNotFoundException">The command is not available on the endpoint's software version or hardware</exception>{(command.parameters.Count == 0 ? "" : "\n/// <exception cref=\"IllegalArgumentException\">One of the passed argument values is invalid</exception>")}
+                                                              /// <exception cref="CommandNotFoundException">The command is not available on the endpoint's software version or hardware</exception>{(command.parameters.Count == 0 ? "" : "\n    /// <exception cref=\"IllegalArgumentException\">One of the passed argument values is invalid</exception>")}
                                                               {methodSignature.signature};
 
 
@@ -93,6 +93,7 @@ public static partial class CsClientWriter {
                                               """);
 
             methodsGenerated++;
+            apiCommandsGenerated++;
         }
 
         foreach (KeyValuePair<string, ISet<InterfaceChild>> interfaceNode in interfaceTree) {

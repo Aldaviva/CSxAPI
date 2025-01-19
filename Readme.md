@@ -1,7 +1,7 @@
 CSxAPI
 ===
 
-[![target version](https://img.shields.io/badge/target%20version-RoomOS%2011.14-%3B?logo=cisco&logoColor=white)](https://www.cisco.com/c/en/us/support/collaboration-endpoints/spark-room-kit-series/products-command-reference-list.html) [![NuGet](https://img.shields.io/nuget/v/CSxAPI?logo=nuget)](https://www.nuget.org/packages/csxapi)
+[![target version](https://img.shields.io/badge/target%20version-RoomOS%2011.20-%3B?logo=cisco&logoColor=white)](https://www.cisco.com/c/en/us/support/collaboration-endpoints/spark-room-kit-series/products-command-reference-list.html) [![NuGet](https://img.shields.io/nuget/v/CSxAPI?logo=nuget)](https://www.nuget.org/packages/csxapi)
 
 CSxAPI is a strongly-typed API client library for **Cisco xAPI**. It is similar to the official [jsxapi](https://www.npmjs.com/package/jsxapi) implementation, but for .NET instead of JavaScript. xAPI is an API exposed by [Cisco video conferencing devices](https://www.cisco.com/c/en/us/products/collaboration-endpoints/collaboration-room-endpoints/index.html), also known as Collaboration Endpoints, Webex Rooms, Cisco devices, room systems, TelePresence, and codecs.
 
@@ -28,13 +28,13 @@ This library can send and receive xCommands, xConfigurations, xStatuses, and xEv
 ## Requirements
 - [.NET 6 or later](https://dotnet.microsoft.com/en-us/download/dotnet)
 - [Cisco endpoint](https://www.cisco.com/c/en/us/products/collaboration-endpoints/collaboration-room-endpoints/index.html)
-    - *Targeted endpoint software version:* **RoomOS 11.14**
+    - *Targeted endpoint software version:* See the "target version" badge at the top of this document
         - Each CSxAPI library release targets exactly one endpoint software version, ideally the latest on-premises version
-        - Other endpoint software versions should also work, as long as the API didn't introduce any breaking changes from the target version
+        - Both earlier and later software versions should also work, as long as the API didn't introduce any breaking changes from the target version
         - This library makes no additional attempt at backwards compatibility other than that afforded by xAPI, which is very backwards compatible on its own
-    - *Minimum endpoint software versions:* CE 9.7 and RoomOS 10.3
-    - *Hardware:* Room, Board, Desk, SX, DX, or MX series are compatible
-        - Tested on a Room Kit and a Room Kit Plus PTZ 4K
+    - *Minimum endpoint software version:* CE 9.7 (April 2019) or RoomOS 10.3 (June 2021)
+    - *Hardware:* Room, Board, Desk, SX, DX, and MX series are compatible
+        - Tested on Room Kit and Room Kit Plus PTZ 4K
         - xAPI over WebSocket does not exist on C, CTS, E, EX, IX, MXP, or T series endpoints, therefore they are not compatible
     - *Configuration:* WebSocket protocol must be enabled
         - Enabled by default in endpoint software versions ≥ RoomOS 10.8
@@ -43,7 +43,7 @@ This library can send and receive xCommands, xConfigurations, xStatuses, and xEv
     - *Addressing:* you must know the endpoint's IP address, FQDN, or other hostname
     - *Authentication:* you need the username and password of an active user that can log in to the endpoint
         - If the endpoint is registered to [Webex](https://admin.webex.com/devices/search) and has no local users, you must create a new local user through Local Device Controls
-    - *Network:* open TCP route from your client to port 443 on the endpoint
+    - *Network:* open route from your client to TCP port 443 on the endpoint without WebSocket blocking
 
 ## Installation
 The [**`CSxAPI`**](https://www.nuget.org/packages/csxapi) package is available on NuGet Gallery.

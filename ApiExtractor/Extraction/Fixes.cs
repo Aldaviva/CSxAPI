@@ -51,7 +51,6 @@ public class Fixes(ExtractedDocumentation documentation) {
         foreach (DocXConfiguration xConfiguration in documentation.configurations.Where(xConfiguration => xConfiguration.name[1] == "Zoom").ToList()) {
             documentation.configurations.Remove(xConfiguration);
         }
-
         foreach (DocXCommand xCommand in documentation.commands.Where(xCommand => xCommand.name[1] == "Zoom").ToList()) {
             documentation.commands.Remove(xCommand);
         }
@@ -65,13 +64,35 @@ public class Fixes(ExtractedDocumentation documentation) {
         // Starting in RoomOS 11.14, the codec can control external serial devices using serial-USB adapters.
         // The configurations to set the baud rate and other settings are parameterized with a port number, but it is always 1, which is not a valid C# parameter name.
         // To work around this, rename the parameter from 1 to N, like a normal configuration.
-        foreach (DocXConfiguration xConfiguration in documentation.configurations) {
+        /*foreach (DocXConfiguration xConfiguration in documentation.configurations) {
             IEnumerable<Parameter> paramWithNumericName =
                 xConfiguration.parameters.Where(param => param is IntParameter { indexOfParameterInName: not null } intParam && int.TryParse(intParam.name, out int _));
             foreach (Parameter param in paramWithNumericName) {
                 param.name = "n";
             }
+        }*/
+
+        // Some configurations are mistakenly documented to take a [n] parameter, even though they don't, such as xConfiguration Audio Input MicrophoneMode
+        foreach (DocXConfiguration config in documentation.configurations) {
+            if (config.parameters.FirstOrDefault(parameter => parameter.description == "DELETE ME") is { } toDelete) {
+                config.parameters.Remove(toDelete);
+            }
         }
+
+        // xCommand Bookings List is mistakenly documented to have two duplicate "offset" parameters
+        DocXCommand bookingsList = documentation.commands.First(command => command.name.SequenceEqual("xCommand Bookings List".Split(' ')));
+        foreach (Parameter extraParam in bookingsList.parameters.Where(p => p.name == "Offset").Skip(1).ToList()) {
+            bookingsList.parameters.Remove(extraParam);
+        }
+
+        // Many Ethernet audio configurations are mistakenly documented twice, once for RoomBar and once for everything else.
+        // The only thing that differs is the range of the positional Channel parameter, but this should not be documented as different methods.
+        // It should be one method with an [n] parameter, which can have different ranges depending on the product, like xConfiguration Audio Output Line [n] Level does (1..6 for CodecPro, 1..1 for Room70).
+        foreach (DocXConfiguration duplicateConfig in (IEnumerable<DocXConfiguration>) documentation.configurations.Where(cfg =>
+                     cfg.name is ["xConfiguration", "Audio", "Input", "Ethernet", _, "Channel", _, "Level" or "Mode" or "Pan" or "Zone"] && cfg.appliesTo.SetEquals([Product.RoomBar])).ToList()) {
+            documentation.configurations.Remove(duplicateConfig);
+        }
+
     }
 
     private void setConfigurationValueSpace(string path, params string[] values) {

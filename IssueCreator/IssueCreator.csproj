@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -8,12 +8,12 @@
         <LangVersion>latest</LangVersion>
         <RollForward>major</RollForward>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-        <Version>1.0.3</Version> <!-- Product version -->
+        <Version>1.0.4</Version> <!-- Product version -->
         <AssemblyName>CiscoEndpointDocumentationReleaseIssueCreator</AssemblyName> <!-- Executable base filename -->
         <AssemblyTitle>Cisco Endpoint Documentation Release Issue Creator</AssemblyTitle> <!-- File description -->
         <Product>$(AssemblyTitle)</Product> <!-- Product name -->
         <Authors>Ben Hutchison</Authors>
-        <Copyright>© 2024 $(Authors)</Copyright>
+        <Copyright>© 2025 $(Authors)</Copyright>
         <Company>$(Authors)</Company>
         <FileVersion>$(Version)</FileVersion> <!-- File version -->
         <NoWarn>CS8524</NoWarn>

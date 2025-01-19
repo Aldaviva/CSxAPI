@@ -144,6 +144,8 @@ public static partial class CsClientWriter {
                                                    """);
 
             eventsGenerated++;
+
+            apiCommandsGenerated++;
         }
 
         foreach (KeyValuePair<string, ISet<InterfaceChild>> interfaceNode in interfaceTree) {

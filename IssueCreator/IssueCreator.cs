@@ -33,13 +33,15 @@ internal class IssueCreator {
         CommandOption<bool> dryRunOption = argumentParser.Option<bool>("-n|--dry-run", "Don't actually file any issues", CommandOptionType.NoValue);
         argumentParser.Parse(args);
         if (gitHubAccessTokenOption.Value() is not { } gitHubAccessToken) {
-            Console.WriteLine($"Usage: {Path.GetFileName(Environment.ProcessPath)} --{gitHubAccessTokenOption.LongName} ghp_XXXXXXXXX [-{dryRunOption.ShortName}|--{dryRunOption.LongName}]");
+            PrintUsage();
             return 1;
         }
 
         await new IssueCreator(gitHubAccessToken, dryRunOption.ParsedValue).CreateIssueIfMissing();
         return 0;
     }
+
+    private static void PrintUsage() => Console.WriteLine($"Usage: {Path.GetFileName(Environment.ProcessPath)} --github-access-token ghp_XXXXXXXXX [--dry-run]");
 
     private IssueCreator(string gitHubAccessToken, bool isDryRun) {
         _isDryRun     = isDryRun;
@@ -100,7 +102,7 @@ internal class IssueCreator {
                     Cisco has released documentation for a new on-premises endpoint software release.
 
                     - **[{documentation.Name} API documentation PDF]({documentation.Location})**
-                        - [all PDF versions]({DocumentationListPageLocation})
+                        - [All PDF versions]({DocumentationListPageLocation})
                         - [API documentation website](https://roomos.cisco.com/xapi)
                     - [Release notes](https://roomos.cisco.com/print/WhatsNew/ReleaseNotesRoomOS_11)
                     - [Software downloads](https://software.cisco.com/download/home/286314238/type/280886992/release/)

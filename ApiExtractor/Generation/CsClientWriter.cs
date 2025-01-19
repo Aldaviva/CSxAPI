@@ -1,10 +1,10 @@
-﻿using System;
+﻿using ApiExtractor.Extraction;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ApiExtractor.Extraction;
 
 namespace ApiExtractor.Generation;
 
@@ -23,6 +23,7 @@ public static partial class CsClientWriter {
     private static int methodsGenerated;
     private static int eventsGenerated;
     private static int enumsGenerated;
+    private static int apiCommandsGenerated;
 
     /// <summary>
     /// https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/
@@ -52,6 +53,7 @@ public static partial class CsClientWriter {
 
         Console.WriteLine($"Generated {methodsGenerated:N0} total methods");
         Console.WriteLine($"Generated {eventsGenerated:N0} total events");
+        Console.WriteLine($"Generated {apiCommandsGenerated:N0} total API commands (xCommand, xConfiguration, xStatus, and xEvent)");
     }
 
     private static StreamWriter openFileStream(string filename) {

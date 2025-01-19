@@ -249,7 +249,7 @@ public static class PdfReader {
                     //skip, not useful information, we'll get the method name from the METHOD_NAME_HEADING below
                     break;
                 case CharacterStyle.METHOD_NAME_HEADING:
-                    // ReSharper disable once MergeIntoPattern broken null checking if you apply this suggestion
+                    // ReSharper disable once MergeIntoPattern - broken null checking if you apply this suggestion
                     if (state == ParserState.USAGE_DEFAULT_VALUE && parameter is StringParameter && parameter.defaultValue is not null) {
                         parameter.defaultValue = parameter.defaultValue.TrimEnd('"');
                     }
@@ -261,7 +261,8 @@ public static class PdfReader {
                         resetMethodParsingState();
                     }
 
-                    if (state == ParserState.METHOD_NAME_HEADING && command is DocXStatus xStatus && Regex.Match(word.Text, @"\[(?<name>[a-z])\]") is { Success: true } match2) {
+                    if (state == ParserState.METHOD_NAME_HEADING && command is DocXStatus xStatus &&
+                        Regex.Match(word.Text, @"\[(?<name>[a-z])\]", RegexOptions.IgnoreCase) is { Success: true } match2) {
                         IntParameter indexParameter = new() {
                             indexOfParameterInName = command.name.Count,
                             required               = true,
@@ -269,6 +270,19 @@ public static class PdfReader {
                         };
                         xStatus.arrayIndexParameters.Add(indexParameter);
                         requiredParameters.Add(indexParameter.name);
+                    }
+
+                    if (state == ParserState.METHOD_NAME_HEADING && command is DocXConfiguration &&
+                        Regex.Match(word.Text, @"(?<name>[a-z]+)\[(?<variableOrRange>\w+|\d+|-?\d+\.\.-?\d)\]", RegexOptions.IgnoreCase) is { Success: true } match4) {
+                        // IntParameter indexParameter = new() {
+                        //     indexOfParameterInName = command.name.Count + 1,
+                        //     required               = true,
+                        //     name                   = "n"
+                        // };
+                        requiredParameters.Add(match4.Groups["name"].Value);
+                        command.name.Add(match4.Groups["name"].Value);
+                        command.name.Add('[' + match4.Groups["variableOrRange"].Value + ']');
+                        break;
                     }
 
                     state = ParserState.METHOD_NAME_HEADING;
@@ -336,21 +350,33 @@ public static class PdfReader {
                     if (state == ParserState.USAGE_EXAMPLE) {
                         switch (command) {
                             case DocXConfiguration xConfiguration when Regex.Match(word.Text, @"^(?<prefix>\w*)\[(?<name>\w+)\]$") is { Success: true } match: {
+                                string name = match.Groups["name"].Value;
+                                if (int.TryParse(name, out int nameNumber)) {
+                                    name = "n";
+                                }
+                                string? namePrefix = match.Groups["prefix"].Value.EmptyToNull();
+                                if (namePrefix != null) {
+                                    parameterUsageIndex++;
+                                }
                                 IntParameter indexParameter = new() {
                                     indexOfParameterInName = parameterUsageIndex,
                                     required               = true,
-                                    name                   = match.Groups["name"].Value,
-                                    namePrefix             = match.Groups["prefix"].Value.EmptyToNull()
+                                    name                   = name,
+                                    namePrefix             = namePrefix
                                 };
                                 xConfiguration.parameters.Add(indexParameter);
                                 requiredParameters.Add(indexParameter.name);
                                 break;
                             }
-                            case DocXConfiguration xConfiguration when Regex.Match(word.Text, @"^\[(?<min>-?\d+)\.\.(?<max>-?\d+)\]$") is { Success: true } match: {
+                            case DocXConfiguration xConfiguration when Regex.Match(word.Text, @"^(?<prefix>\w*)\[(?<min>-?\d+)\.\.(?<max>-?\d+)\]$") is { Success: true } match: {
+                                string? namePrefix = match.Groups["prefix"].Value.EmptyToNull();
+                                if (namePrefix != null) {
+                                    parameterUsageIndex++;
+                                }
                                 IntParameter channelParameter = new() {
                                     indexOfParameterInName = parameterUsageIndex,
                                     required               = true,
-                                    name                   = previousWord!.Text,
+                                    name                   = namePrefix ?? previousWord!.Text,
                                     ranges                 = { new IntRange { minimum = int.Parse(match.Groups["min"].Value), maximum = int.Parse(match.Groups["max"].Value) } }
                                 };
                                 xConfiguration.parameters.Add(channelParameter);
@@ -636,17 +662,27 @@ public static class PdfReader {
                                 if (parameter is IntParameter intParameter && Regex.Match(word.Text, @"^(?<min>-?\d+)\.\.(?<max>-?\d+)$") is { Success: true } match) {
                                     intParameter.ranges.Add(new IntRange { minimum = int.Parse(match.Groups["min"].Value), maximum = int.Parse(match.Groups["max"].Value) });
                                     state = ParserState.VALUESPACE_TERM_DEFINITION;
+                                } else if (parameter is IntParameter intParameter2 && int.TryParse(word.Text, out int match3)) {
+                                    intParameter2.ranges.Add(new IntRange { minimum = match3, maximum = match3 });
+                                    state = ParserState.VALUESPACE_TERM_DEFINITION;
                                 } else {
                                     parameter.description = appendWord(parameter.description, word, previousWordBaseline);
                                     state                 = ParserState.USAGE_PARAMETER_DESCRIPTION;
                                 }
-
                             } else if (word.Text == ":" && state == ParserState.VALUESPACE) {
                                 //the colon after the parameter name, usually it's part of the word with PARAMETER_NAME character style but sometimes it's tokenized as a separate word
                                 //skip
                             } else if (command is DocXStatus _status) {
                                 _status.returnValueSpace.description = appendWord(_status.returnValueSpace.description, word, previousWordBaseline);
                                 state                                = ParserState.VALUESPACE_DESCRIPTION;
+                            } else if (command is DocXConfiguration config && word.Text == "Unique" /*&& ((List<string>) [
+                                           "xConfiguration Audio Input MicrophoneMode",
+                                           "xConfiguration Audio Microphones BeamMix Inputs",
+                                           "xConfiguration Audio Microphones NearTalkerSector Mode",
+                                           "xConfiguration Audio Microphones PhantomPower"
+                                       ]).Any(method => config.name.SequenceEqual(method.Split(' ')))*/) {
+                                parameter = new IntParameter { name = "n", description = "DELETE ME" };
+                                state     = ParserState.VALUESPACE_TERM_DEFINITION;
                             } else {
                                 throw new ParsingException(word, state, characterStyle, page, "no current parameter to append description to");
                             }
@@ -783,7 +819,7 @@ public static class PdfReader {
     }
 
     private static bool isDifferentParagraph(double baselineDifference) => baselineDifference > 10;
-    private static bool isDifferentParagraph(Word   word, double? previousWordBaseline) => isDifferentParagraph(getBaselineDifference(word, previousWordBaseline));
+    private static bool isDifferentParagraph(Word word, double? previousWordBaseline) => isDifferentParagraph(getBaselineDifference(word, previousWordBaseline));
 
     private static IEnumerable<(Word word, Page page)> getWordsOnPages(PdfDocument pdf, Range pageIndices) {
         int[] pageNumbers = Enumerable.Range(0, pdf.NumberOfPages).ToArray()[pageIndices];

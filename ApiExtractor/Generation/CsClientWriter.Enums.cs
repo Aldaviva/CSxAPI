@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using ApiExtractor.Extraction;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using ApiExtractor.Extraction;
 
 namespace ApiExtractor.Generation;
 
@@ -14,13 +14,13 @@ public static partial class CsClientWriter {
         await using StreamWriter enumSerializerWriter = openFileStream("Serialization\\EnumSerializer.cs");
 
         await enumsWriter.WriteAsync($"""
-            {FILE_HEADER}
+                                      {FILE_HEADER}
 
-            using System.CodeDom.Compiler;
+                                      using System.CodeDom.Compiler;
 
-            namespace {NAMESPACE}.API.Data;
+                                      namespace {NAMESPACE}.API.Data;
 
-            """);
+                                      """);
 
         foreach (DocXConfiguration command in documentation.commands.Concat(documentation.configurations)) {
             await enumsWriter.WriteAsync(string.Join(null, command.parameters.Where(parameter => parameter.type == DataType.ENUM).Cast<EnumParameter>().Select(parameter => {
@@ -29,19 +29,19 @@ public static partial class CsClientWriter {
 
                 return $$"""
 
-                /// <summary>For use with <see cref="{{getInterfaceName(command)}}.{{command.nameWithoutBrackets.Last()}}{{$"({string.Join(", ", command.parameters.OrderByDescending(p => p.required).Select(p => $"{p.type switch {
-                    DataType.INTEGER => "int",
-                    DataType.STRING  => "string",
-                    DataType.ENUM    => getEnumName(command, p.name)
-                }}{(p.required ? "" : "?")}"))})"}}" /></summary>
-                {{GENERATED_ATTRIBUTE}}
-                public enum {{enumTypeName}} {
+                         /// <summary>For use with <see cref="{{getInterfaceName(command)}}.{{command.nameWithoutBrackets.Last()}}{{$"({string.Join(", ", command.parameters.OrderByDescending(p => p.required).Select(p => $"{p.type switch {
+                             DataType.INTEGER => "int",
+                             DataType.STRING  => "string",
+                             DataType.ENUM    => getEnumName(command, p.name)
+                         }}{(p.required ? "" : "?")}"))})"}}" /></summary>
+                         {{GENERATED_ATTRIBUTE}}
+                         public enum {{enumTypeName}} {
 
-                {{string.Join(",\r\n\r\n", parameter.possibleValues.Select(value => $"    /// <summary><para><c>{value.name}</c>{(value.description is not null ? ": " + value.description.NewLinesToParagraphs(true) : "")}</para></summary>\r\n    {xapiEnumValueToCsIdentifier(command, parameter, value)}"))}}
+                         {{string.Join(",\r\n\r\n", parameter.possibleValues.Select(value => $"    /// <summary><para><c>{value.name}</c>{(value.description is not null ? ": " + value.description.NewLinesToParagraphs(true) : "")}</para></summary>\r\n    {xapiEnumValueToCsIdentifier(command, parameter, value)}"))}}
 
-                }
+                         }
 
-                """;
+                         """;
             })));
         }
 
@@ -51,15 +51,15 @@ public static partial class CsClientWriter {
 
             await enumsWriter.WriteAsync($$"""
 
-                /// <summary>For use with <see cref="{{getInterfaceName(xStatus)}}.{{xStatus.nameWithoutBrackets.Last()}}{{$"({string.Join(", ", xStatus.arrayIndexParameters.Select(_ => "int"))})"}}" /></summary>
-                {{GENERATED_ATTRIBUTE}}
-                public enum {{enumTypeName}} {
-                
-                {{string.Join(",\r\n\r\n", valueSpace.possibleValues.Select(value => $"    /// <summary><para><c>{value.name}</c>{(value.description is not null ? ": " + value.description.NewLinesToParagraphs(true) : "")}</para></summary>\r\n    {xapiEnumValueToCsIdentifier(xStatus, null, value)}"))}}
+                                           /// <summary>For use with <see cref="{{getInterfaceName(xStatus)}}.{{xStatus.nameWithoutBrackets.Last()}}{{$"({string.Join(", ", xStatus.arrayIndexParameters.Select(_ => "int"))})"}}" /></summary>
+                                           {{GENERATED_ATTRIBUTE}}
+                                           public enum {{enumTypeName}} {
 
-                }
-            
-                """);
+                                           {{string.Join(",\r\n\r\n", valueSpace.possibleValues.Select(value => $"    /// <summary><para><c>{value.name}</c>{(value.description is not null ? ": " + value.description.NewLinesToParagraphs(true) : "")}</para></summary>\r\n    {xapiEnumValueToCsIdentifier(xStatus, null, value)}"))}}
+
+                                           }
+
+                                           """);
 
             enumsGenerated++;
         }
@@ -75,15 +75,15 @@ public static partial class CsClientWriter {
                     string enumTypeName = getEnumName(enumChild.name);
 
                     await enumsWriter.WriteAsync($$"""
-                        {{GENERATED_ATTRIBUTE}}
-                        public enum {{enumTypeName}} {
+                                                   {{GENERATED_ATTRIBUTE}}
+                                                   public enum {{enumTypeName}} {
 
-                        {{string.Join(",\r\n\r\n", enumChild.possibleValues.Select(value => $"    /// <summary><para><c>{value.name}</c></para></summary>\r\n    {xapiEnumValueToCsIdentifier(null, null, value)}"))}}
+                                                   {{string.Join(",\r\n\r\n", enumChild.possibleValues.Select(value => $"    /// <summary><para><c>{value.name}</c></para></summary>\r\n    {xapiEnumValueToCsIdentifier(null, null, value)}"))}}
 
-                        }
+                                                   }
 
 
-                        """);
+                                                   """);
                 } else if (eventChild is IEventParent subParent) {
                     await writeEventParentEnum(subParent);
                 }
@@ -91,27 +91,27 @@ public static partial class CsClientWriter {
         }
 
         await enumSerializerWriter.WriteAsync($$"""
-            {{FILE_HEADER}}
-            
-            using {{NAMESPACE}}.API.Data;
-            using System.CodeDom.Compiler;
-            
-            namespace {{NAMESPACE}}.API.Serialization;
+                                                {{FILE_HEADER}}
 
-            {{GENERATED_ATTRIBUTE}}
-            internal static class EnumSerializer {
+                                                using {{NAMESPACE}}.API.Data;
+                                                using System.CodeDom.Compiler;
 
-                private static readonly IDictionary<Type, (Func<Enum, string> serialize, Func<string, Enum> deserialize)> enumSerializers = new Dictionary<Type, (Func<Enum, string>, Func<string, Enum>)>();
+                                                namespace {{NAMESPACE}}.API.Serialization;
 
-                public static T Deserialize<T>(string serialized) where T: Enum => (T) enumSerializers[typeof(T)].deserialize(serialized);
+                                                {{GENERATED_ATTRIBUTE}}
+                                                internal static class EnumSerializer {
+                                                
+                                                    private static readonly IDictionary<Type, (Func<Enum, string> serialize, Func<string, Enum> deserialize)> enumSerializers = new Dictionary<Type, (Func<Enum, string>, Func<string, Enum>)>();
+                                                
+                                                    public static T Deserialize<T>(string serialized) where T: Enum => (T) enumSerializers[typeof(T)].deserialize(serialized);
+                                                
+                                                    public static string Serialize<T>(T deserialized) where T: Enum => enumSerializers[typeof(T)].serialize(deserialized);
+                                                
+                                                    private static string DefaultSerializer(Enum o) => o.ToString();
+                                                
+                                                    static EnumSerializer() {
 
-                public static string Serialize<T>(T deserialized) where T: Enum => enumSerializers[typeof(T)].serialize(deserialized);
-
-                private static string DefaultSerializer(Enum o) => o.ToString();
-
-                static EnumSerializer() {
-
-            """);
+                                                """);
 
         foreach (DocXConfiguration command in documentation.commands.Concat(documentation.configurations)) {
             await enumSerializerWriter.WriteAsync(string.Join(null, command.parameters.Where(parameter => parameter.type == DataType.ENUM).Cast<EnumParameter>().Select(parameter => {
@@ -126,16 +126,16 @@ public static partial class CsClientWriter {
                     parameter.possibleValues.Select(value => $"\"{value.name}\" => {enumTypeName}.{xapiEnumValueToCsIdentifier(command, parameter, value)}");
 
                 return $$"""
-                            enumSerializers.Add(typeof({{enumTypeName}}), (
-                                serialize: deserialized => ({{enumTypeName}}) deserialized switch {
-                                    {{string.Join(",\r\n                ", serializerSwitchArms.Append("_ => deserialized.ToString()"))}}
-                                },
-                                deserialize: serialized => serialized switch {
-                                    {{string.Join(",\r\n                ", deserializerSwitchArms.Append($"_ => throw new ArgumentOutOfRangeException(nameof(serialized), serialized, $\"Unknown {enumTypeName} enum value {{serialized}}, known values are {{string.Join(\", \", Enum.GetValues<{enumTypeName}>())}}.\")"))}}
-                                }));
+                                 enumSerializers.Add(typeof({{enumTypeName}}), (
+                                     serialize: deserialized => ({{enumTypeName}}) deserialized switch {
+                                         {{string.Join(",\r\n                ", serializerSwitchArms.Append("_ => deserialized.ToString()"))}}
+                                     },
+                                     deserialize: serialized => serialized switch {
+                                         {{string.Join(",\r\n                ", deserializerSwitchArms.Append($"_ => throw new ArgumentOutOfRangeException(nameof(serialized), serialized, $\"Unknown {enumTypeName} enum value {{serialized}}, known values are {{string.Join(\", \", Enum.GetValues<{enumTypeName}>())}}.\")"))}}
+                                     }));
 
 
-                    """;
+                         """;
 
             })));
         }
@@ -148,14 +148,14 @@ public static partial class CsClientWriter {
                 valueSpace.possibleValues.Select(value => $"\"{value.name}\" => {enumTypeName}.{xapiEnumValueToCsIdentifier(xStatus, null, value)}");
 
             await enumSerializerWriter.WriteAsync($$"""
-                        enumSerializers.Add(typeof({{enumTypeName}}), (
-                            serialize: DefaultSerializer,
-                            deserialize: serialized => serialized switch {
-                                {{string.Join(",\r\n                ", deserializerSwitchArms.Append($"_ => throw new ArgumentOutOfRangeException(nameof(serialized), serialized, $\"Unknown {enumTypeName} enum value {{serialized}}, known values are {{string.Join(\", \", Enum.GetValues<{enumTypeName}>())}}.\")"))}}
-                            }));
+                                                            enumSerializers.Add(typeof({{enumTypeName}}), (
+                                                                serialize: DefaultSerializer,
+                                                                deserialize: serialized => serialized switch {
+                                                                    {{string.Join(",\r\n                ", deserializerSwitchArms.Append($"_ => throw new ArgumentOutOfRangeException(nameof(serialized), serialized, $\"Unknown {enumTypeName} enum value {{serialized}}, known values are {{string.Join(\", \", Enum.GetValues<{enumTypeName}>())}}.\")"))}}
+                                                                }));
 
 
-                """);
+                                                    """);
         }
 
         foreach (DocXEvent xEvent in documentation.events) {
@@ -170,14 +170,14 @@ public static partial class CsClientWriter {
                         enumChild.possibleValues.Select(value => $"\"{value.name}\" => {enumTypeName}.{xapiEnumValueToCsIdentifier(null, null, value)}");
 
                     await enumSerializerWriter.WriteAsync($$"""
-                                enumSerializers.Add(typeof({{enumTypeName}}), (
-                                    serialize: DefaultSerializer,
-                                    deserialize: serialized => serialized switch {
-                                        {{string.Join(",\r\n                ", deserializerSwitchArms.Append($"_ => throw new ArgumentOutOfRangeException(nameof(serialized), serialized, $\"Unknown {enumTypeName} enum value {{serialized}}, known values are {{string.Join(\", \", Enum.GetValues<{enumTypeName}>())}}.\")"))}}
-                                    }));
+                                                                    enumSerializers.Add(typeof({{enumTypeName}}), (
+                                                                        serialize: DefaultSerializer,
+                                                                        deserialize: serialized => serialized switch {
+                                                                            {{string.Join(",\r\n                ", deserializerSwitchArms.Append($"_ => throw new ArgumentOutOfRangeException(nameof(serialized), serialized, $\"Unknown {enumTypeName} enum value {{serialized}}, known values are {{string.Join(\", \", Enum.GetValues<{enumTypeName}>())}}.\")"))}}
+                                                                        }));
 
 
-                        """);
+                                                            """);
                 } else if (eventChild is IEventParent subParent) {
                     await writeEventSerializer(subParent);
                 }
