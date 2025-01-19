@@ -6,7 +6,7 @@ namespace ApiExtractor.Extraction;
 
 public class Fixes(ExtractedDocumentation documentation) {
 
-    public void fix() {
+    public void Fix() {
         // Value space descriptions that depend heavily on the endpoint model are hard to parse, so hard-code the value spaces
         setConfigurationValueSpace("xConfiguration Video Input AirPlay Mode", "Off", "On");
         setConfigurationValueSpace("xConfiguration Video Input Connector [n] CameraControl Mode", "Off", "On");
@@ -23,17 +23,17 @@ public class Fixes(ExtractedDocumentation documentation) {
         // Undocumented enum, so deserialize as a string
         // xStatus Conference Call [n] Capabilities FarendMessage Mode
         // xStatus Conference Call [n] Capabilities IxChannel Status
-        foreach (DocXStatus naStatus in documentation.statuses.Where(status => status.description == "Not applicable in this release.")) {
-            naStatus.returnValueSpace = new StringValueSpace();
+        foreach (DocXStatus naStatus in documentation.Statuses.Where(status => status.Description == "Not applicable in this release.")) {
+            naStatus.ReturnValueSpace = new StringValueSpace();
         }
 
         // Multiple path parameters with the same name
         // xStatus MediaChannels Call [n] Channel [n] Audio Mute
-        foreach (DocXStatus multiParameterStatus in documentation.statuses.Where(status => status.arrayIndexParameters.Count >= 2)) {
+        foreach (DocXStatus multiParameterStatus in documentation.Statuses.Where(status => status.ArrayIndexParameters.Count >= 2)) {
             int nIndex = 1;
-            foreach (IntParameter parameter in multiParameterStatus.arrayIndexParameters.Where(parameter => parameter.name == "n")) {
+            foreach (IntParameter parameter in multiParameterStatus.ArrayIndexParameters.Where(parameter => parameter.Name == "n")) {
                 if (nIndex > 1) {
-                    parameter.name += nIndex;
+                    parameter.Name += nIndex;
                 }
 
                 nIndex++;
@@ -43,23 +43,23 @@ public class Fixes(ExtractedDocumentation documentation) {
         // Event body is a number, not an object
         // xEvent Standby SecondsUntilStandby
         // xEvent RoomReset SecondsUntilReset
-        foreach (DocXEvent xEvent in documentation.events.Where(xEvent => xEvent.children is [{ name: [.., "NameNotUsed"] }])) {
-            xEvent.children.Single().name[^1] = "Value";
+        foreach (DocXEvent xEvent in documentation.Events.Where(xEvent => xEvent.Children is [{ Name: [.., "NameNotUsed"] }])) {
+            xEvent.Children.Single().Name[^1] = "Value";
         }
 
         // Zoom commands and configuration
-        foreach (DocXConfiguration xConfiguration in documentation.configurations.Where(xConfiguration => xConfiguration.name[1] == "Zoom").ToList()) {
-            documentation.configurations.Remove(xConfiguration);
+        foreach (DocXConfiguration xConfiguration in documentation.Configurations.Where(xConfiguration => xConfiguration.Name[1] == "Zoom").ToList()) {
+            documentation.Configurations.Remove(xConfiguration);
         }
-        foreach (DocXCommand xCommand in documentation.commands.Where(xCommand => xCommand.name[1] == "Zoom").ToList()) {
-            documentation.commands.Remove(xCommand);
+        foreach (DocXCommand xCommand in documentation.Commands.Where(xCommand => xCommand.Name[1] == "Zoom").ToList()) {
+            documentation.Commands.Remove(xCommand);
         }
 
         // This status has a malformed description in the PDF – it is missing the "Value space of the result returned:" string
         // Therefore, we cannot parse the value space normally.
         // To work around this, manually add the value space definition here.
-        documentation.statuses.First(status => status.name.SequenceEqual("xStatus Video Output Connector [n] ConnectedDevice SupportedFormat Res_1920_1200_50".Split(' '))).returnValueSpace =
-            new EnumValueSpace { possibleValues = new HashSet<EnumValue> { new("False") { description = "The format is not supported." }, new("True") { description = "The format is supported." } } };
+        documentation.Statuses.First(status => status.Name.SequenceEqual("xStatus Video Output Connector [n] ConnectedDevice SupportedFormat Res_1920_1200_50".Split(' '))).ReturnValueSpace =
+            new EnumValueSpace { PossibleValues = new HashSet<EnumValue> { new("False") { Description = "The format is not supported." }, new("True") { Description = "The format is supported." } } };
 
         // Starting in RoomOS 11.14, the codec can control external serial devices using serial-USB adapters.
         // The configurations to set the baud rate and other settings are parameterized with a port number, but it is always 1, which is not a valid C# parameter name.
@@ -73,50 +73,50 @@ public class Fixes(ExtractedDocumentation documentation) {
         }*/
 
         // Some configurations are mistakenly documented to take a [n] parameter, even though they don't, such as xConfiguration Audio Input MicrophoneMode
-        foreach (DocXConfiguration config in documentation.configurations) {
-            if (config.parameters.FirstOrDefault(parameter => parameter.description == "DELETE ME") is { } toDelete) {
-                config.parameters.Remove(toDelete);
+        foreach (DocXConfiguration config in documentation.Configurations) {
+            if (config.Parameters.FirstOrDefault(parameter => parameter.Description == "DELETE ME") is { } toDelete) {
+                config.Parameters.Remove(toDelete);
             }
         }
 
         // xCommand Bookings List is mistakenly documented to have two duplicate "offset" parameters
-        DocXCommand bookingsList = documentation.commands.First(command => command.name.SequenceEqual("xCommand Bookings List".Split(' ')));
-        foreach (Parameter extraParam in bookingsList.parameters.Where(p => p.name == "Offset").Skip(1).ToList()) {
-            bookingsList.parameters.Remove(extraParam);
+        DocXCommand bookingsList = documentation.Commands.First(command => command.Name.SequenceEqual("xCommand Bookings List".Split(' ')));
+        foreach (Parameter extraParam in bookingsList.Parameters.Where(p => p.Name == "Offset").Skip(1).ToList()) {
+            bookingsList.Parameters.Remove(extraParam);
         }
 
         // Many Ethernet audio configurations are mistakenly documented twice, once for RoomBar and once for everything else.
         // The only thing that differs is the range of the positional Channel parameter, but this should not be documented as different methods.
         // It should be one method with an [n] parameter, which can have different ranges depending on the product, like xConfiguration Audio Output Line [n] Level does (1..6 for CodecPro, 1..1 for Room70).
-        foreach (DocXConfiguration duplicateConfig in (IEnumerable<DocXConfiguration>) documentation.configurations.Where(cfg =>
-                     cfg.name is ["xConfiguration", "Audio", "Input", "Ethernet", _, "Channel", _, "Level" or "Mode" or "Pan" or "Zone"] && cfg.appliesTo.SetEquals([Product.RoomBar])).ToList()) {
-            documentation.configurations.Remove(duplicateConfig);
+        foreach (DocXConfiguration duplicateConfig in (IEnumerable<DocXConfiguration>) documentation.Configurations.Where(cfg =>
+                     cfg.Name is ["xConfiguration", "Audio", "Input", "Ethernet", _, "Channel", _, "Level" or "Mode" or "Pan" or "Zone"] && cfg.AppliesTo.SetEquals([Product.RoomBar])).ToList()) {
+            documentation.Configurations.Remove(duplicateConfig);
         }
 
     }
 
     private void setConfigurationValueSpace(string path, params string[] values) {
-        if (findCommand<DocXConfiguration>(path) is { } configuration && configuration.parameters.LastOrDefault() is EnumParameter parameter) {
-            parameter.possibleValues.Clear();
+        if (FindCommand<DocXConfiguration>(path) is { } configuration && configuration.Parameters.LastOrDefault() is EnumParameter parameter) {
+            parameter.PossibleValues.Clear();
             foreach (string newValue in values) {
-                parameter.possibleValues.Add(new EnumValue(newValue));
+                parameter.PossibleValues.Add(new EnumValue(newValue));
             }
         } else {
             Console.WriteLine($"Fixes: could not find {path}, so not applying this fix");
         }
     }
 
-    private T? findCommand<T>(string path) where T: IPathNamed {
+    private T? FindCommand<T>(string path) where T: IPathNamed {
         IList<string> nameQuery = path.Split(' ');
         IList<T> collection = typeof(T) switch {
-            var t when t == typeof(DocXCommand)       => (List<T>) documentation.commands,
-            var t when t == typeof(DocXConfiguration) => (List<T>) documentation.configurations,
-            var t when t == typeof(DocXStatus)        => (List<T>) documentation.statuses,
-            var t when t == typeof(DocXEvent)         => (List<T>) documentation.events
+            var t when t == typeof(DocXCommand)       => (List<T>) documentation.Commands,
+            var t when t == typeof(DocXConfiguration) => (List<T>) documentation.Configurations,
+            var t when t == typeof(DocXStatus)        => (List<T>) documentation.Statuses,
+            var t when t == typeof(DocXEvent)         => (List<T>) documentation.Events
             // _                                         => null
         };
 
-        return collection.FirstOrDefault(command => command.name.SequenceEqual(nameQuery));
+        return collection.FirstOrDefault(command => command.Name.SequenceEqual(nameQuery));
     }
 
 }

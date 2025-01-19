@@ -14,7 +14,7 @@ namespace ApiExtractor.Extraction;
 /// </summary>
 public class FixedDefaultWordExtractor: IWordExtractor {
 
-    public static readonly FixedDefaultWordExtractor INSTANCE = new();
+    public static readonly FixedDefaultWordExtractor Instance = new();
 
     protected FixedDefaultWordExtractor() { }
 
@@ -25,9 +25,9 @@ public class FixedDefaultWordExtractor: IWordExtractor {
 
         var gapCountsSoFarByFontSize = new Dictionary<double, Dictionary<double, int>>();
 
-        double? lastY      = default; //renamed by Ben
-        double? lastX      = default;
-        Letter? lastLetter = default;
+        double? lastY      = null; //renamed by Ben
+        double? lastX      = null;
+        Letter? lastLetter = null;
         foreach (Letter letter in lettersOrder) {
             lastY ??= letter.Location.Y;
             lastX ??= letter.Location.X;
@@ -44,7 +44,7 @@ public class FixedDefaultWordExtractor: IWordExtractor {
 
             if (Math.Abs(letter.Location.Y - lastY.Value) > 0.5) { // fixed by Ben
                 if (lettersSoFar.Count > 0) {
-                    yield return generateWord(lettersSoFar);
+                    yield return GenerateWord(lettersSoFar);
                     lettersSoFar.Clear();
                 }
 
@@ -95,7 +95,7 @@ public class FixedDefaultWordExtractor: IWordExtractor {
 
             if (nextToLeft || nextBigSpace || nextIsWhiteSpace || nextFontDiffers || nextFontSizeDiffers || nextTextOrientationDiffers || suspectGap) {
                 if (lettersSoFar.Count > 0) {
-                    yield return generateWord(lettersSoFar);
+                    yield return GenerateWord(lettersSoFar);
                     lettersSoFar.Clear();
                 }
             }
@@ -111,11 +111,11 @@ public class FixedDefaultWordExtractor: IWordExtractor {
         }
 
         if (lettersSoFar.Count > 0) {
-            yield return generateWord(lettersSoFar);
+            yield return GenerateWord(lettersSoFar);
         }
     }
 
-    private static Word generateWord(IEnumerable<Letter> letters) {
+    private static Word GenerateWord(IEnumerable<Letter> letters) {
         return new Word(letters.ToList());
     }
 

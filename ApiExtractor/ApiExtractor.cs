@@ -1,12 +1,12 @@
-﻿using System;
+﻿using ApiExtractor.Extraction;
+using ApiExtractor.Generation;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using ApiExtractor.Extraction;
-using ApiExtractor.Generation;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Util;
@@ -15,27 +15,27 @@ namespace ApiExtractor;
 
 internal class ApiExtractor {
 
-    private const string DOCUMENTATION_DIRECTORY = @"..\..\..\Documentation\";
+    private const string DocumentationDirectory = @"..\..\..\Documentation\";
 
     public static async Task Main() {
-        string pdfFilename      = Path.Combine(DOCUMENTATION_DIRECTORY, "api-reference-guide.pdf");
-        string eventXmlFilename = Path.Combine(DOCUMENTATION_DIRECTORY, "event.xml");
+        string pdfFilename      = Path.Combine(DocumentationDirectory, "api-reference-guide.pdf");
+        string eventXmlFilename = Path.Combine(DocumentationDirectory, "event.xml");
 
         // dumpWordsOnPage(args); return;
 
         Stopwatch              stopwatch = Stopwatch.StartNew();
         ExtractedDocumentation docs      = new();
-        PdfReader.parsePdf(pdfFilename, docs);
-        new EventReader(docs).parseEventXml(eventXmlFilename);
-        new Fixes(docs).fix();
-        await CsClientWriter.writeClient(docs);
+        PdfReader.ParsePdf(pdfFilename, docs);
+        new EventReader(docs).ParseEventXml(eventXmlFilename);
+        new Fixes(docs).Fix();
+        await CsClientWriter.WriteClient(docs);
 
         stopwatch.Stop();
         Console.WriteLine($"Done in {stopwatch.Elapsed.TotalSeconds:N3} seconds.");
     }
 
     private static void dumpWordsOnPage() {
-        using PdfDocument pdf = PdfDocument.Open(Path.Combine(DOCUMENTATION_DIRECTORY, "api-reference-guide.pdf"));
+        using PdfDocument pdf = PdfDocument.Open(Path.Combine(DocumentationDirectory, "api-reference-guide.pdf"));
 
         Page page           = pdf.GetPage(59);
         bool leftSideOfPage = false;
@@ -64,7 +64,7 @@ internal class ApiExtractor {
             Letter firstLetter = textBlock.Letters[0];
             // Console.WriteLine(textBlock.Text);
             Console.WriteLine($@"{textBlock.Text}
-    character style = {PdfReader.getCharacterStyle(textBlock)}
+    character style = {PdfReader.GetCharacterStyle(textBlock)}
     typeface = {firstLetter.Font.Name.Split('+', 2).Last()}
     point size = {firstLetter.PointSize:N3}
     italic = {firstLetter.Font.IsItalic}

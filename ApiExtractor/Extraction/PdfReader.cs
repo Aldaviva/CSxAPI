@@ -17,21 +17,21 @@ namespace ApiExtractor.Extraction;
 
 public static class PdfReader {
 
-    private const int DPI = 72;
+    private const int Dpi = 72;
 
-    private static readonly ISet<string> XSTATUS_DESCRIPTION_VALUE_SPACE_HEADING_WORDS = new HashSet<string> { "Value", "space", "of", "the", "result", "returned:" };
-    private static readonly IColor       PRODUCT_NAME_COLOR                            = new RGBColor(0.035, 0.376, 0.439);
+    private static readonly ISet<string> XstatusDescriptionValueSpaceHeadingWords = new HashSet<string> { "Value", "space", "of", "the", "result", "returned:" };
+    private static readonly IColor       ProductNameColor                         = new RGBColor(0.035, 0.376, 0.439);
 
     public static void Main() {
         // Console.WriteLine(string.Join("\n", guessEnumRange("Microphone.1/../Microphone.4/Line.1/Line.2/HDMI.2".Split('/')).Select(value => value.name)));
         // return;
 
         try {
-            const string PDF_FILENAME = @"c:\Users\Ben\Documents\Work\Blue Jeans\Cisco in-room controls for Verizon\api-reference-guide-roomos-111.pdf";
+            const string pdfFilename = @"c:\Users\Ben\Documents\Work\Blue Jeans\Cisco in-room controls for Verizon\api-reference-guide-roomos-111.pdf";
 
             Stopwatch              stopwatch = Stopwatch.StartNew();
             ExtractedDocumentation xapi      = new();
-            parsePdf(PDF_FILENAME, xapi);
+            ParsePdf(pdfFilename, xapi);
             Console.WriteLine($"Parsed PDF in {stopwatch.Elapsed:g}");
 
             /*IEnumerable<IGrouping<string, AbstractCommand>> duplicates = xapi.statuses
@@ -121,29 +121,29 @@ public static class PdfReader {
             }*/
 
         } catch (ParsingException e) {
-            Letter firstLetter = getFirstNonQuotationMarkLetter(e.word.Letters);
-            Console.WriteLine($"Failed to parse page {e.page.Number}: {e.Message} (word: {e.word.Text}, character style: {e.characterStyle}, parser state: {e.state}, position: " +
-                $"({firstLetter.StartBaseLine.X / DPI:N}\", {(e.page.Height - firstLetter.StartBaseLine.Y) / DPI:N}\"))");
+            Letter firstLetter = getFirstNonQuotationMarkLetter(e.Word.Letters);
+            Console.WriteLine($"Failed to parse page {e.Page.Number}: {e.Message} (word: {e.Word.Text}, character style: {e.CharacterStyle}, parser state: {e.State}, position: " +
+                $"({firstLetter.StartBaseLine.X / Dpi:N}\", {(e.Page.Height - firstLetter.StartBaseLine.Y) / Dpi:N}\"))");
             Console.WriteLine($"Font: {firstLetter.PointSize:N2}pt {firstLetter.FontName}");
         }
     }
 
-    public static void parsePdf(string filename, ExtractedDocumentation xapi) {
+    public static void ParsePdf(string filename, ExtractedDocumentation xapi) {
         Console.WriteLine($"Reading {Path.GetFileName(filename)}");
         using PdfDocument pdf = PdfDocument.Open(filename);
         try {
-            parseSection(pdf, xapi.configurations);
-            Console.WriteLine($"Parsed {xapi.configurations.Count:N0} xConfigurations from PDF");
+            parseSection(pdf, xapi.Configurations);
+            Console.WriteLine($"Parsed {xapi.Configurations.Count:N0} xConfigurations from PDF");
 
-            parseSection(pdf, xapi.commands);
-            Console.WriteLine($"Parsed {xapi.commands.Count:N0} xCommands from PDF");
+            parseSection(pdf, xapi.Commands);
+            Console.WriteLine($"Parsed {xapi.Commands.Count:N0} xCommands from PDF");
 
-            parseSection(pdf, xapi.statuses);
-            Console.WriteLine($"Parsed {xapi.statuses.Count:N0} xStatuses from PDF");
+            parseSection(pdf, xapi.Statuses);
+            Console.WriteLine($"Parsed {xapi.Statuses.Count:N0} xStatuses from PDF");
         } catch (ParsingException e) {
-            Letter firstLetter = getFirstNonQuotationMarkLetter(e.word.Letters);
-            Console.WriteLine($"Failed to parse page {e.page.Number}: {e.Message} (word: {e.word.Text}, character style: {e.characterStyle}, parser state: {e.state}, position: " +
-                $"({firstLetter.StartBaseLine.X / DPI:N}\", {(e.page.Height - firstLetter.StartBaseLine.Y) / DPI:N}\"))");
+            Letter firstLetter = getFirstNonQuotationMarkLetter(e.Word.Letters);
+            Console.WriteLine($"Failed to parse page {e.Page.Number}: {e.Message} (word: {e.Word.Text}, character style: {e.CharacterStyle}, parser state: {e.State}, position: " +
+                $"({firstLetter.StartBaseLine.X / Dpi:N}\", {(e.Page.Height - firstLetter.StartBaseLine.Y) / Dpi:N}\"))");
             Console.WriteLine($"Font: {firstLetter.PointSize:N2}pt {firstLetter.FontName}");
             throw;
         }
@@ -164,9 +164,9 @@ public static class PdfReader {
 
         IEnumerable<(Word word, Page page)> wordsOnPages = getWordsOnPages(pdf, commandPages);
 
-        ParserState state                = ParserState.START;
-        double?     previousWordBaseline = default;
-        Word?       previousWord         = default;
+        ParserState state                = ParserState.Start;
+        double?     previousWordBaseline = null;
+        Word?       previousWord         = null;
 
         ISet<string> requiredParameters = new HashSet<string>();
         string?      parameterName;
@@ -179,100 +179,100 @@ public static class PdfReader {
         string       enumListDelimiter;
         string?      partialEnumValue;
 
-        resetMethodParsingState();
+        ResetMethodParsingState();
 
-        void resetMethodParsingState() {
-            partialProductName  = default;
+        void ResetMethodParsingState() {
+            partialProductName  = null;
             parameterUsageIndex = 0;
-            statusValueSpace    = default;
+            statusValueSpace    = null;
             requiredParameters.Clear();
-            resetParameterParsingState();
+            ResetParameterParsingState();
         }
 
-        void resetParameterParsingState() {
-            parameter            = default;
-            parameterName        = default;
-            parameterDescription = default;
-            enumValue            = default;
+        void ResetParameterParsingState() {
+            parameter            = null;
+            parameterName        = null;
+            parameterDescription = null;
+            enumValue            = null;
             enumListDelimiter    = "/";
-            partialEnumValue     = default;
+            partialEnumValue     = null;
         }
 
         T command = new();
 
         foreach ((Word word, Page page) in wordsOnPages) {
-            CharacterStyle characterStyle = getCharacterStyle(word);
+            CharacterStyle characterStyle = GetCharacterStyle(word);
 
             // Console.WriteLine($"Parsing {word.Text}\t(character style = {characterStyle}, parser state = {state})");
 
-            if (command is DocXStatus status && statusValueSpace is not null && characterStyle != CharacterStyle.VALUESPACE_OR_DISCLAIMER) {
-                status.returnValueSpace = statusValueSpace switch {
+            if (command is DocXStatus status && statusValueSpace is not null && characterStyle != CharacterStyle.ValuespaceOrDisclaimer) {
+                status.ReturnValueSpace = statusValueSpace switch {
                     "Integer" => new IntValueSpace(),
                     "String"  => new StringValueSpace(),
 
                     _ when Regex.Match(statusValueSpace, @"^Integer \((?<min>-?\d+)\.\.(?<max>-?\d+)\)$") is { Success: true } match => new IntValueSpace
-                        { ranges = new List<IntRange> { new() { minimum = int.Parse(match.Groups["min"].Value), maximum = int.Parse(match.Groups["max"].Value) } } },
+                        { Ranges = new List<IntRange> { new() { Minimum = int.Parse(match.Groups["min"].Value), Maximum = int.Parse(match.Groups["max"].Value) } } },
                     _ when Regex.Match(statusValueSpace, @"^(?<min>-?\d+)\.\.(?<max>-?\d+)$") is { Success: true } match => new IntValueSpace
-                        { ranges = new List<IntRange> { new() { minimum = int.Parse(match.Groups["min"].Value), maximum = int.Parse(match.Groups["max"].Value) } } },
+                        { Ranges = new List<IntRange> { new() { Minimum = int.Parse(match.Groups["min"].Value), Maximum = int.Parse(match.Groups["max"].Value) } } },
 
-                    _ when statusValueSpace.Split(", ") is { Length: > 1 } split                                    => new EnumValueSpace { possibleValues = parseEnumValueSpacePossibleValues(split) },
-                    _ when statusValueSpace.Split('/') is { Length: > 1 } split && !statusValueSpace.Contains("..") => new EnumValueSpace { possibleValues = parseEnumValueSpacePossibleValues(split) },
-                    _ when statusValueSpace.Split('/') is { Length: > 1 } split && split.Contains("..")             => new EnumValueSpace { possibleValues = guessEnumRange(split) },
+                    _ when statusValueSpace.Split(", ") is { Length: > 1 } split                                    => new EnumValueSpace { PossibleValues = ParseEnumValueSpacePossibleValues(split) },
+                    _ when statusValueSpace.Split('/') is { Length: > 1 } split && !statusValueSpace.Contains("..") => new EnumValueSpace { PossibleValues = ParseEnumValueSpacePossibleValues(split) },
+                    _ when statusValueSpace.Split('/') is { Length: > 1 } split && split.Contains("..")             => new EnumValueSpace { PossibleValues = GuessEnumRange(split) },
                     _ when Regex.Match(statusValueSpace, @"^Off/(?<min>-?\d+)\.\.(?<max>-?\d+)$") is { Success: true } match => new IntValueSpace
-                        { optionalValue = "Off", ranges = new List<IntRange> { new() { minimum = int.Parse(match.Groups["min"].Value), maximum = int.Parse(match.Groups["max"].Value) } } },
+                        { OptionalValue = "Off", Ranges = new List<IntRange> { new() { Minimum = int.Parse(match.Groups["min"].Value), Maximum = int.Parse(match.Groups["max"].Value) } } },
 
-                    _ => new EnumValueSpace { possibleValues = new HashSet<EnumValue> { new(statusValueSpace) } }
+                    _ => new EnumValueSpace { PossibleValues = new HashSet<EnumValue> { new(statusValueSpace) } }
                     // _ => throw new ParsingException(word, state, characterStyle, page, "Could not parse xStatus returned value space " + statusValueSpace)
                 };
 
-                statusValueSpace = default;
+                statusValueSpace = null;
             }
 
             // Omit duplicate methods
             // Sometimes Cisco documents the same exact method twice in the same PDF. Examples:
             //     xStatus Video Output Connector [n] Connected
             //     xStatus MediaChannels DirectShare [n] Channel [n] Netstat LastIntervalReceived
-            if (state == ParserState.METHOD_NAME_HEADING && characterStyle != CharacterStyle.METHOD_NAME_HEADING &&
-                xapiDestinationCollection.Any(cmd => cmd != command && cmd.name.Skip(1).SequenceEqual(command.name.Skip(1)))) {
+            if (state == ParserState.MethodNameHeading && characterStyle != CharacterStyle.MethodNameHeading &&
+                xapiDestinationCollection.Any(cmd => cmd != command && cmd.Name.Skip(1).SequenceEqual(command.Name.Skip(1)))) {
                 xapiDestinationCollection.Remove(command);
             }
 
             switch (characterStyle) {
-                case CharacterStyle.METHOD_FAMILY_HEADING:
-                    if (state == ParserState.USAGE_DEFAULT_VALUE && parameter is StringParameter && parameter.defaultValue is not null) {
-                        parameter.defaultValue = parameter.defaultValue.TrimEnd('"');
+                case CharacterStyle.MethodFamilyHeading:
+                    if (state == ParserState.UsageDefaultValue && parameter is StringParameter && parameter.DefaultValue is not null) {
+                        parameter.DefaultValue = parameter.DefaultValue.TrimEnd('"');
                     }
 
-                    resetMethodParsingState();
+                    ResetMethodParsingState();
 
-                    state = ParserState.START;
+                    state = ParserState.Start;
                     //skip, not useful information, we'll get the method name from the METHOD_NAME_HEADING below
                     break;
-                case CharacterStyle.METHOD_NAME_HEADING:
+                case CharacterStyle.MethodNameHeading:
                     // ReSharper disable once MergeIntoPattern - broken null checking if you apply this suggestion
-                    if (state == ParserState.USAGE_DEFAULT_VALUE && parameter is StringParameter && parameter.defaultValue is not null) {
-                        parameter.defaultValue = parameter.defaultValue.TrimEnd('"');
+                    if (state == ParserState.UsageDefaultValue && parameter is StringParameter && parameter.DefaultValue is not null) {
+                        parameter.DefaultValue = parameter.DefaultValue.TrimEnd('"');
                     }
 
-                    if (state != ParserState.METHOD_NAME_HEADING) {
+                    if (state != ParserState.MethodNameHeading) {
                         // finished previous method, moving to next method
                         command = new T();
                         xapiDestinationCollection.Add(command);
-                        resetMethodParsingState();
+                        ResetMethodParsingState();
                     }
 
-                    if (state == ParserState.METHOD_NAME_HEADING && command is DocXStatus xStatus &&
+                    if (state == ParserState.MethodNameHeading && command is DocXStatus xStatus &&
                         Regex.Match(word.Text, @"\[(?<name>[a-z])\]", RegexOptions.IgnoreCase) is { Success: true } match2) {
                         IntParameter indexParameter = new() {
-                            indexOfParameterInName = command.name.Count,
-                            required               = true,
-                            name                   = match2.Groups["name"].Value // can be duplicated even in one method
+                            IndexOfParameterInName = command.Name.Count,
+                            Required               = true,
+                            Name                   = match2.Groups["name"].Value // can be duplicated even in one method
                         };
-                        xStatus.arrayIndexParameters.Add(indexParameter);
-                        requiredParameters.Add(indexParameter.name);
+                        xStatus.ArrayIndexParameters.Add(indexParameter);
+                        requiredParameters.Add(indexParameter.Name);
                     }
 
-                    if (state == ParserState.METHOD_NAME_HEADING && command is DocXConfiguration &&
+                    if (state == ParserState.MethodNameHeading && command is DocXConfiguration &&
                         Regex.Match(word.Text, @"(?<name>[a-z]+)\[(?<variableOrRange>\w+|\d+|-?\d+\.\.-?\d)\]", RegexOptions.IgnoreCase) is { Success: true } match4) {
                         // IntParameter indexParameter = new() {
                         //     indexOfParameterInName = command.name.Count + 1,
@@ -280,27 +280,27 @@ public static class PdfReader {
                         //     name                   = "n"
                         // };
                         requiredParameters.Add(match4.Groups["name"].Value);
-                        command.name.Add(match4.Groups["name"].Value);
-                        command.name.Add('[' + match4.Groups["variableOrRange"].Value + ']');
+                        command.Name.Add(match4.Groups["name"].Value);
+                        command.Name.Add('[' + match4.Groups["variableOrRange"].Value + ']');
                         break;
                     }
 
-                    state = ParserState.METHOD_NAME_HEADING;
-                    command.name.Add(word.Text);
+                    state = ParserState.MethodNameHeading;
+                    command.Name.Add(word.Text);
                     break;
-                case CharacterStyle.PRODUCT_NAME:
+                case CharacterStyle.ProductName:
                     switch (state) {
-                        case ParserState.METHOD_NAME_HEADING when word.Text == "Applies":
-                            state = ParserState.APPLIES_TO;
+                        case ParserState.MethodNameHeading when word.Text == "Applies":
+                            state = ParserState.AppliesTo;
                             break;
-                        case ParserState.APPLIES_TO when word.Text == "to:":
-                            state = ParserState.APPLIES_TO_PRODUCTS;
+                        case ParserState.AppliesTo when word.Text == "to:":
+                            state = ParserState.AppliesToProducts;
                             break;
-                        case ParserState.APPLIES_TO or ParserState.APPLIES_TO_PRODUCTS:
-                            state = ParserState.APPLIES_TO_PRODUCTS;
+                        case ParserState.AppliesTo or ParserState.AppliesToProducts:
+                            state = ParserState.AppliesToProducts;
                             string productName = (partialProductName ?? string.Empty) + word.Text;
-                            if (parseProduct(productName) is { } product) {
-                                command.appliesTo.Add(product);
+                            if (ParseProduct(productName) is { } product) {
+                                command.AppliesTo.Add(product);
                                 partialProductName = null;
                             } else if (word.Text is not ("All" or "products")) {
                                 partialProductName = productName;
@@ -308,46 +308,46 @@ public static class PdfReader {
                             }
 
                             break;
-                        case ParserState.VALUESPACE or ParserState.USAGE_PARAMETER_VALUE_SPACE_APPLIES_TO:
-                            state = ParserState.USAGE_PARAMETER_VALUE_SPACE_APPLIES_TO;
+                        case ParserState.Valuespace or ParserState.UsageParameterValueSpaceAppliesTo:
+                            state = ParserState.UsageParameterValueSpaceAppliesTo;
                             if (parameter is not null) {
-                                parameter.valueSpaceDescription = appendWord(parameter.valueSpaceDescription, word, previousWordBaseline);
+                                parameter.ValueSpaceDescription = AppendWord(parameter.ValueSpaceDescription, word, previousWordBaseline);
                             } else {
                                 // This entire parameter, not just some of its values, only applies to specific products (xCommand Audio Volume Decrease Device:)
-                                parameterDescription = appendWord(parameterDescription, word, previousWordBaseline);
+                                parameterDescription = AppendWord(parameterDescription, word, previousWordBaseline);
                                 // throw new ParsingException(word, state, characterStyle, page, "no parameter to append value space description to");
                             }
 
                             break;
-                        case ParserState.VALUESPACE_TERM_DEFINITION:
+                        case ParserState.ValuespaceTermDefinition:
                             if (word.Text != "[" && word.Text != "]") {
                                 // skip delimiters
-                            } else if (parseProduct(word.Text) is { } product2 && (parameter as IntParameter)?.ranges.LastOrDefault() is { } lastRange) {
-                                lastRange.appliesTo.Add(product2);
+                            } else if (ParseProduct(word.Text) is { } product2 && (parameter as IntParameter)?.Ranges.LastOrDefault() is { } lastRange) {
+                                lastRange.AppliesTo.Add(product2);
                             }
 
                             break;
-                        case ParserState.USAGE_DEFAULT_VALUE when parameter is not null:
-                            parameter.defaultValue = appendWord(parameter.defaultValue, word, previousWordBaseline);
+                        case ParserState.UsageDefaultValue when parameter is not null:
+                            parameter.DefaultValue = AppendWord(parameter.DefaultValue, word, previousWordBaseline);
                             break;
                         default:
                             throw new ParsingException(word, state, characterStyle, page, "unexpected state for character style");
                     }
 
                     break;
-                case CharacterStyle.USAGE_HEADING:
+                case CharacterStyle.UsageHeading:
                     if (word.Text == "USAGE:") {
-                        state = ParserState.USAGE_EXAMPLE;
-                        if (command is DocXCommand xCommand && xCommand.description.Contains("multiline")) {
-                            xCommand.parameters.Add(new StringParameter { name = "body", required = true });
+                        state = ParserState.UsageExample;
+                        if (command is DocXCommand xCommand && xCommand.Description.Contains("multiline")) {
+                            xCommand.Parameters.Add(new StringParameter { Name = "body", Required = true });
                         }
                     } else {
                         throw new ParsingException(word, state, characterStyle, page, "unexpected word for character style");
                     }
 
                     break;
-                case CharacterStyle.USAGE_EXAMPLE:
-                    if (state == ParserState.USAGE_EXAMPLE) {
+                case CharacterStyle.UsageExample:
+                    if (state == ParserState.UsageExample) {
                         switch (command) {
                             case DocXConfiguration xConfiguration when Regex.Match(word.Text, @"^(?<prefix>\w*)\[(?<name>\w+)\]$") is { Success: true } match: {
                                 string name = match.Groups["name"].Value;
@@ -359,13 +359,13 @@ public static class PdfReader {
                                     parameterUsageIndex++;
                                 }
                                 IntParameter indexParameter = new() {
-                                    indexOfParameterInName = parameterUsageIndex,
-                                    required               = true,
-                                    name                   = name,
-                                    namePrefix             = namePrefix
+                                    IndexOfParameterInName = parameterUsageIndex,
+                                    Required               = true,
+                                    Name                   = name,
+                                    NamePrefix             = namePrefix
                                 };
-                                xConfiguration.parameters.Add(indexParameter);
-                                requiredParameters.Add(indexParameter.name);
+                                xConfiguration.Parameters.Add(indexParameter);
+                                requiredParameters.Add(indexParameter.Name);
                                 break;
                             }
                             case DocXConfiguration xConfiguration when Regex.Match(word.Text, @"^(?<prefix>\w*)\[(?<min>-?\d+)\.\.(?<max>-?\d+)\]$") is { Success: true } match: {
@@ -374,31 +374,31 @@ public static class PdfReader {
                                     parameterUsageIndex++;
                                 }
                                 IntParameter channelParameter = new() {
-                                    indexOfParameterInName = parameterUsageIndex,
-                                    required               = true,
-                                    name                   = namePrefix ?? previousWord!.Text,
-                                    ranges                 = { new IntRange { minimum = int.Parse(match.Groups["min"].Value), maximum = int.Parse(match.Groups["max"].Value) } }
+                                    IndexOfParameterInName = parameterUsageIndex,
+                                    Required               = true,
+                                    Name                   = namePrefix ?? previousWord!.Text,
+                                    Ranges                 = { new IntRange { Minimum = int.Parse(match.Groups["min"].Value), Maximum = int.Parse(match.Groups["max"].Value) } }
                                 };
-                                xConfiguration.parameters.Add(channelParameter);
-                                requiredParameters.Add(channelParameter.name);
+                                xConfiguration.Parameters.Add(channelParameter);
+                                requiredParameters.Add(channelParameter.Name);
 
                                 break;
                             }
                         }
 
                         parameterUsageIndex++;
-                    } else if (state == ParserState.DESCRIPTION && command is DocXStatus) {
+                    } else if (state == ParserState.Description && command is DocXStatus) {
                         // the PDF authors forgot to put the "Value space of the result returned:" text in the description, so we parsed the entire value space definition as the description instead, and are now surprised by the font of the Example
                         // add the value space definition in Fixes.cs
-                        state = ParserState.USAGE_EXAMPLE;
+                        state = ParserState.UsageExample;
                     } else {
                         throw new ParsingException(word, state, characterStyle, page, "unexpected state for character style");
                     }
 
                     break;
-                case CharacterStyle.PARAMETER_NAME:
+                case CharacterStyle.ParameterName:
                     switch (state) {
-                        case ParserState.USAGE_EXAMPLE:
+                        case ParserState.UsageExample:
                             if (!word.Text.EndsWith(']')) {
                                 requiredParameters.Add(word.Text.Trim('"'));
                             }
@@ -406,37 +406,37 @@ public static class PdfReader {
                             // otherwise it's an optional parameter like [Channel: Channel]
                             parameterUsageIndex++;
                             break;
-                        case ParserState.USAGE_PARAMETER_NAME or ParserState.VALUESPACE_TERM_DEFINITION when command is DocXConfiguration xConfiguration &&
-                            xConfiguration.parameters.FirstOrDefault(p => word.Text == p.name + ':' && (p as IntParameter)?.indexOfParameterInName is not null) is { } _positionalParam:
-                            parameter = _positionalParam;
-                            state     = ParserState.USAGE_PARAMETER_DESCRIPTION;
+                        case ParserState.UsageParameterName or ParserState.ValuespaceTermDefinition when command is DocXConfiguration xConfiguration &&
+                            xConfiguration.Parameters.FirstOrDefault(p => word.Text == p.Name + ':' && (p as IntParameter)?.IndexOfParameterInName is not null) is { } positionalParam:
+                            parameter = positionalParam;
+                            state     = ParserState.UsageParameterDescription;
                             break;
-                        case ParserState.USAGE_PARAMETER_NAME or ParserState.VALUESPACE_TERM_DEFINITION or ParserState.USAGE_DEFAULT_VALUE or ParserState.VALUESPACE or
-                            ParserState.USAGE_PARAMETER_VALUE_SPACE_APPLIES_TO or ParserState.USAGE_PARAMETER_DESCRIPTION:
+                        case ParserState.UsageParameterName or ParserState.ValuespaceTermDefinition or ParserState.UsageDefaultValue or ParserState.Valuespace or
+                            ParserState.UsageParameterValueSpaceAppliesTo or ParserState.UsageParameterDescription:
                             // ReSharper disable once MergeIntoPattern - broken null checking if you apply this suggestion
-                            if (parameter is StringParameter _param && _param.defaultValue is not null) {
-                                _param.defaultValue = _param.defaultValue.TrimEnd('"');
+                            if (parameter is StringParameter param && param.DefaultValue is not null) {
+                                param.DefaultValue = param.DefaultValue.TrimEnd('"');
                             }
 
-                            resetParameterParsingState();
+                            ResetParameterParsingState();
                             parameterName = word.Text.TrimEnd(':');
-                            state         = ParserState.VALUESPACE;
+                            state         = ParserState.Valuespace;
                             break;
                         default:
                             throw new ParsingException(word, state, characterStyle, page, "unexpected state for character style");
                     }
 
                     break;
-                case CharacterStyle.VALUESPACE_OR_DISCLAIMER:
+                case CharacterStyle.ValuespaceOrDisclaimer:
                     switch (state) {
-                        case ParserState.APPLIES_TO_PRODUCTS or ParserState.REQUIRES_USER_ROLE:
+                        case ParserState.AppliesToProducts or ParserState.RequiresUserRole:
                             // ignore the "Not available for the Webex Devices Cloud xAPI service on personal mode devices" disclaimer
-                            state = ParserState.REQUIRES_USER_ROLE;
+                            state = ParserState.RequiresUserRole;
                             break;
-                        case ParserState.VALUESPACE when command is DocXStatus:
-                            statusValueSpace = appendWord(statusValueSpace, word, previousWordBaseline);
+                        case ParserState.Valuespace when command is DocXStatus:
+                            statusValueSpace = AppendWord(statusValueSpace, word, previousWordBaseline);
                             break;
-                        case ParserState.VALUESPACE or ParserState.USAGE_PARAMETER_VALUE_SPACE_APPLIES_TO:
+                        case ParserState.Valuespace or ParserState.UsageParameterValueSpaceAppliesTo:
                             Regex numericRangePattern = new(@"^(?<openparen>\()?(?<min>-?\d+)\.\.(?<max>-?\d+)(?<-openparen>\))?(?(openparen)(?!))$");
                             switch (word.Text) {
                                 case "String" when parameter is null:
@@ -445,12 +445,12 @@ public static class PdfReader {
                                     }
 
                                     parameter = new StringParameter {
-                                        name        = parameterName,
-                                        required    = requiredParameters.Contains(parameterName),
-                                        description = parameterDescription is not null ? parameterDescription + '\n' : string.Empty
+                                        Name        = parameterName,
+                                        Required    = requiredParameters.Contains(parameterName),
+                                        Description = parameterDescription is not null ? parameterDescription + '\n' : string.Empty
                                     };
 
-                                    (command as DocXConfiguration)?.parameters.Add(parameter);
+                                    (command as DocXConfiguration)?.Parameters.Add(parameter);
                                     parameterName = null;
                                     break;
                                 case "Integer" when parameter is null:
@@ -459,12 +459,12 @@ public static class PdfReader {
                                     }
 
                                     parameter = new IntParameter {
-                                        name        = parameterName,
-                                        required    = requiredParameters.Contains(parameterName),
-                                        description = parameterDescription is not null ? parameterDescription + '\n' : string.Empty
+                                        Name        = parameterName,
+                                        Required    = requiredParameters.Contains(parameterName),
+                                        Description = parameterDescription is not null ? parameterDescription + '\n' : string.Empty
                                     };
 
-                                    (command as DocXConfiguration)?.parameters.Add(parameter);
+                                    (command as DocXConfiguration)?.Parameters.Add(parameter);
                                     parameterName = null;
                                     break;
                                 case { } valueSpace when parameter is null && numericRangePattern.Match(valueSpace) is { Success: true } match:
@@ -473,18 +473,18 @@ public static class PdfReader {
                                     }
 
                                     parameter = new IntParameter {
-                                        name        = parameterName,
-                                        required    = requiredParameters.Contains(parameterName),
-                                        description = parameterDescription is not null ? parameterDescription + '\n' : string.Empty,
-                                        ranges = {
+                                        Name        = parameterName,
+                                        Required    = requiredParameters.Contains(parameterName),
+                                        Description = parameterDescription is not null ? parameterDescription + '\n' : string.Empty,
+                                        Ranges = {
                                             new IntRange {
-                                                minimum = int.Parse(match.Groups["min"].Value),
-                                                maximum = int.Parse(match.Groups["max"].Value)
+                                                Minimum = int.Parse(match.Groups["min"].Value),
+                                                Maximum = int.Parse(match.Groups["max"].Value)
                                             }
                                         }
                                     };
 
-                                    (command as DocXConfiguration)?.parameters.Add(parameter);
+                                    (command as DocXConfiguration)?.Parameters.Add(parameter);
                                     parameterName = null;
 
                                     break;
@@ -498,63 +498,63 @@ public static class PdfReader {
                                     }
 
                                     parameter = new EnumParameter {
-                                        name           = parameterName,
-                                        required       = requiredParameters.Contains(parameterName),
-                                        description    = parameterDescription is not null ? parameterDescription + '\n' : string.Empty,
-                                        possibleValues = parseEnumValueSpacePossibleValues(enumList, enumListDelimiter)
+                                        Name           = parameterName,
+                                        Required       = requiredParameters.Contains(parameterName),
+                                        Description    = parameterDescription is not null ? parameterDescription + '\n' : string.Empty,
+                                        PossibleValues = ParseEnumValueSpacePossibleValues(enumList, enumListDelimiter)
                                     };
 
-                                    (command as DocXConfiguration)?.parameters.Add(parameter);
+                                    (command as DocXConfiguration)?.Parameters.Add(parameter);
                                     parameterName = null;
                                     break;
-                                case { } valueSpace when parameter is StringParameter _param && numericRangePattern.Match(valueSpace) is { Success: true } match:
+                                case { } valueSpace when parameter is StringParameter param && numericRangePattern.Match(valueSpace) is { Success: true } match:
                                     // It's an integer encoded as a string!
-                                    _param.minimumLength = match.Groups["min"].Length;
-                                    _param.maximumLength = match.Groups["max"].Length;
-                                    state                = ParserState.USAGE_PARAMETER_VALUE_SPACE_APPLIES_TO;
+                                    param.MinimumLength = match.Groups["min"].Length;
+                                    param.MaximumLength = match.Groups["max"].Length;
+                                    state               = ParserState.UsageParameterValueSpaceAppliesTo;
                                     break;
-                                case { } valueSpace when parameter is StringParameter _param && Regex.Match(valueSpace, @"^\((?<min>-?\d+),(?<max>-?\d+)\)$") is { Success: true } match:
+                                case { } valueSpace when parameter is StringParameter param && Regex.Match(valueSpace, @"^\((?<min>-?\d+),(?<max>-?\d+)\)$") is { Success: true } match:
                                     try {
-                                        _param.minimumLength = int.Parse(match.Groups["min"].Value);
-                                        _param.maximumLength = int.Parse(match.Groups["max"].Value);
+                                        param.MinimumLength = int.Parse(match.Groups["min"].Value);
+                                        param.MaximumLength = int.Parse(match.Groups["max"].Value);
                                     } catch (FormatException) {
                                         throw new ParsingException(word, state, characterStyle, page,
                                             $"Failed to parse uncommon comma-style string parameter length range \"{valueSpace}\" as ({match.Groups["min"].Value}, {match.Groups["max"].Value})");
                                     }
 
-                                    state = ParserState.USAGE_PARAMETER_VALUE_SPACE_APPLIES_TO;
+                                    state = ParserState.UsageParameterValueSpaceAppliesTo;
                                     break;
-                                case { } valueSpace when parameter is StringParameter _param && valueSpace.StartsWith('(') && valueSpace.EndsWith(','):
+                                case { } valueSpace when parameter is StringParameter param && valueSpace.StartsWith('(') && valueSpace.EndsWith(','):
                                     try {
-                                        _param.minimumLength = int.Parse(valueSpace[1..^1]);
+                                        param.MinimumLength = int.Parse(valueSpace[1..^1]);
                                     } catch (FormatException) {
                                         throw new ParsingException(word, state, characterStyle, page,
                                             $"Failed to parse string parameter length lower bound \"{valueSpace}\" as integer {valueSpace[1..^1]}");
                                     }
 
                                     break;
-                                case { } valueSpace when parameter is StringParameter _param && valueSpace.EndsWith(')'):
+                                case { } valueSpace when parameter is StringParameter param && valueSpace.EndsWith(')'):
                                     try {
-                                        _param.maximumLength = int.Parse(valueSpace[..^1]);
+                                        param.MaximumLength = int.Parse(valueSpace[..^1]);
                                     } catch (FormatException) {
                                         throw new ParsingException(word, state, characterStyle, page,
                                             $"Failed to parse string parameter length upper bound \"{valueSpace}\" as integer {valueSpace[..^1]}");
                                     }
 
-                                    state = ParserState.USAGE_PARAMETER_VALUE_SPACE_APPLIES_TO;
+                                    state = ParserState.UsageParameterValueSpaceAppliesTo;
                                     break;
-                                case { } valueSpace when parameter is IntParameter _param && numericRangePattern.Match(valueSpace) is { Success: true } match:
-                                    _param.ranges.Add(new IntRange { minimum = int.Parse(match.Groups["min"].Value), maximum = int.Parse(match.Groups["max"].Value) });
+                                case { } valueSpace when parameter is IntParameter param && numericRangePattern.Match(valueSpace) is { Success: true } match:
+                                    param.Ranges.Add(new IntRange { Minimum = int.Parse(match.Groups["min"].Value), Maximum = int.Parse(match.Groups["max"].Value) });
                                     // state = ParserState.USAGE_PARAMETER_VALUE_SPACE_APPLIES_TO; //sometimes might be followed by more text
                                     break;
-                                case { } enumList when parameter is EnumParameter _param:
+                                case { } enumList when parameter is EnumParameter param:
                                     //second line of wrapped enum values
                                     if (enumListDelimiter == "," && (enumList.EndsWith('_') || enumList.EndsWith('/'))) {
                                         partialEnumValue += enumList;
                                     } else {
-                                        IEnumerable<EnumValue> additionalValues = parseEnumValueSpacePossibleValues((partialEnumValue ?? "") + enumList, enumListDelimiter);
+                                        IEnumerable<EnumValue> additionalValues = ParseEnumValueSpacePossibleValues((partialEnumValue ?? "") + enumList, enumListDelimiter);
                                         foreach (EnumValue additionalValue in additionalValues) {
-                                            _param.possibleValues.Add(additionalValue);
+                                            param.PossibleValues.Add(additionalValue);
                                         }
 
                                         partialEnumValue = null;
@@ -567,14 +567,14 @@ public static class PdfReader {
                             }
 
                             if (parameter != null) {
-                                parameter.valueSpaceDescription = parameter.valueSpaceDescription is null ? word.Text : appendWord(parameter.valueSpaceDescription, word, previousWordBaseline);
+                                parameter.ValueSpaceDescription = parameter.ValueSpaceDescription is null ? word.Text : AppendWord(parameter.ValueSpaceDescription, word, previousWordBaseline);
                             }
 
                             break;
-                        case ParserState.USAGE_DEFAULT_VALUE when parameter is not null:
-                            parameter.defaultValue = appendWord(parameter.defaultValue, word, previousWordBaseline);
+                        case ParserState.UsageDefaultValue when parameter is not null:
+                            parameter.DefaultValue = AppendWord(parameter.DefaultValue, word, previousWordBaseline);
                             break;
-                        case ParserState.DESCRIPTION_VALUE_SPACE_HEADING:
+                        case ParserState.DescriptionValueSpaceHeading:
 
                             break;
                         default:
@@ -582,155 +582,155 @@ public static class PdfReader {
                     }
 
                     break;
-                case CharacterStyle.VALUESPACE_TERM:
-                    if ((parameter as EnumValues ?? (command as DocXStatus)?.returnValueSpace as EnumValues) is { } enumValues) {
-                        enumValue = enumValues.possibleValues.FirstOrDefault(value => value.name == word.Text.TrimEnd(':'));
-                        state     = ParserState.VALUESPACE_TERM_DEFINITION;
+                case CharacterStyle.ValuespaceTerm:
+                    if ((parameter as IEnumValues ?? (command as DocXStatus)?.ReturnValueSpace as IEnumValues) is { } enumValues) {
+                        enumValue = enumValues.PossibleValues.FirstOrDefault(value => value.Name == word.Text.TrimEnd(':'));
+                        state     = ParserState.ValuespaceTermDefinition;
                     } else if (parameter is not null) {
-                        parameter.description = appendWord(parameter.description, word, previousWordBaseline);
-                        state                 = ParserState.USAGE_PARAMETER_DESCRIPTION;
+                        parameter.Description = AppendWord(parameter.Description, word, previousWordBaseline);
+                        state                 = ParserState.UsageParameterDescription;
                     } else {
                         // throw new ParsingException(word, state, characterStyle, page, $"found parameter enum term character style for non-enum parameter {parameter?.name ?? "(null param)"} of type {parameter?.type.ToString() ?? "null"}");
                     }
 
                     break;
-                case CharacterStyle.BODY:
+                case CharacterStyle.Body:
                     switch (state) {
-                        case ParserState.START:
-                            state = ParserState.VERSION_AND_PRODUCTS_COVERED_PREAMBLE;
+                        case ParserState.Start:
+                            state = ParserState.VersionAndProductsCoveredPreamble;
                             break;
-                        case ParserState.VERSION_AND_PRODUCTS_COVERED_PREAMBLE:
+                        case ParserState.VersionAndProductsCoveredPreamble:
                             //skip
                             break;
-                        case ParserState.METHOD_NAME_HEADING when word.Text == "Applies":
-                            state = ParserState.APPLIES_TO;
+                        case ParserState.MethodNameHeading when word.Text == "Applies":
+                            state = ParserState.AppliesTo;
                             break;
-                        case ParserState.APPLIES_TO when word.Text == "to:":
-                            state = ParserState.APPLIES_TO_PRODUCTS;
+                        case ParserState.AppliesTo when word.Text == "to:":
+                            state = ParserState.AppliesToProducts;
                             break;
-                        case ParserState.APPLIES_TO when word.Text == "Requires":
-                            state = ParserState.REQUIRES_USER_ROLE;
+                        case ParserState.AppliesTo when word.Text == "Requires":
+                            state = ParserState.RequiresUserRole;
                             break;
-                        case ParserState.APPLIES_TO_PRODUCTS when word.Text == "Requires":
-                            state = ParserState.REQUIRES_USER_ROLE;
+                        case ParserState.AppliesToProducts when word.Text == "Requires":
+                            state = ParserState.RequiresUserRole;
                             break;
-                        case ParserState.APPLIES_TO_PRODUCTS:
-                            command.description = appendWord(command.description, word, previousWordBaseline);
-                            state               = ParserState.DESCRIPTION;
+                        case ParserState.AppliesToProducts:
+                            command.Description = AppendWord(command.Description, word, previousWordBaseline);
+                            state               = ParserState.Description;
                             break;
-                        case ParserState.REQUIRES_USER_ROLE when word.Text is "role:":
-                            state = ParserState.REQUIRES_USER_ROLE_ROLES;
+                        case ParserState.RequiresUserRole when word.Text is "role:":
+                            state = ParserState.RequiresUserRoleRoles;
                             break;
-                        case ParserState.REQUIRES_USER_ROLE_ROLES when !isDifferentParagraph(word, previousWordBaseline):
+                        case ParserState.RequiresUserRoleRoles when !IsDifferentParagraph(word, previousWordBaseline):
                             foreach (string roleName in word.Text.TrimEnd(',').Split(',')) {
-                                if (parseEnum<UserRole>(roleName) is { } role) {
-                                    command.requiresUserRole.Add(role);
+                                if (ParseEnum<UserRole>(roleName) is { } role) {
+                                    command.RequiresUserRole.Add(role);
                                 } else {
                                     throw new ParsingException(word, state, characterStyle, page, "role was not a recognized user role");
                                 }
                             }
 
                             break;
-                        case ParserState.USAGE_EXAMPLE:
+                        case ParserState.UsageExample:
                             if (word.Text == "where") {
-                                state = ParserState.USAGE_PARAMETER_NAME;
+                                state = ParserState.UsageParameterName;
                             } else {
                                 throw new ParsingException(word, state, characterStyle, page, "unexpected word for state and character style");
                             }
 
                             break;
-                        case ParserState.VALUESPACE or ParserState.VALUESPACE_DESCRIPTION or ParserState.VALUESPACE_TERM_DEFINITION
-                            when isDifferentParagraph(word, previousWordBaseline) && word.Text == "Example:" && command is DocXStatus:
-                            state = ParserState.USAGE_EXAMPLE;
+                        case ParserState.Valuespace or ParserState.ValuespaceDescription or ParserState.ValuespaceTermDefinition
+                            when IsDifferentParagraph(word, previousWordBaseline) && word.Text == "Example:" && command is DocXStatus:
+                            state = ParserState.UsageExample;
                             break;
-                        case ParserState.USAGE_PARAMETER_DESCRIPTION or ParserState.USAGE_PARAMETER_VALUE_SPACE_APPLIES_TO or ParserState.VALUESPACE or ParserState
-                                .VALUESPACE_TERM_DEFINITION
-                            when isDifferentParagraph(word, previousWordBaseline) && command.GetType() == typeof(DocXConfiguration) && word.Text == "Default":
+                        case ParserState.UsageParameterDescription or ParserState.UsageParameterValueSpaceAppliesTo or ParserState.Valuespace or ParserState
+                                .ValuespaceTermDefinition
+                            when IsDifferentParagraph(word, previousWordBaseline) && command.GetType() == typeof(DocXConfiguration) && word.Text == "Default":
 
-                            state     = ParserState.USAGE_DEFAULT_VALUE_HEADING;
+                            state     = ParserState.UsageDefaultValueHeading;
                             enumValue = null;
                             break;
-                        case ParserState.USAGE_PARAMETER_DESCRIPTION or ParserState.USAGE_PARAMETER_VALUE_SPACE_APPLIES_TO or ParserState.VALUESPACE or ParserState
-                                .VALUESPACE_TERM_DEFINITION
-                            when isDifferentParagraph(word, previousWordBaseline) && command.GetType() == typeof(DocXConfiguration) && word.Text == "Range:" &&
+                        case ParserState.UsageParameterDescription or ParserState.UsageParameterValueSpaceAppliesTo or ParserState.Valuespace or ParserState
+                                .ValuespaceTermDefinition
+                            when IsDifferentParagraph(word, previousWordBaseline) && command.GetType() == typeof(DocXConfiguration) && word.Text == "Range:" &&
                             parameter is IntParameter:
 
-                            state = ParserState.VALUESPACE;
+                            state = ParserState.Valuespace;
                             break;
-                        case ParserState.USAGE_PARAMETER_DESCRIPTION or ParserState.USAGE_PARAMETER_VALUE_SPACE_APPLIES_TO or ParserState.VALUESPACE:
+                        case ParserState.UsageParameterDescription or ParserState.UsageParameterValueSpaceAppliesTo or ParserState.Valuespace:
                             if (parameter is not null) {
                                 if (parameter is IntParameter intParameter && Regex.Match(word.Text, @"^(?<min>-?\d+)\.\.(?<max>-?\d+)$") is { Success: true } match) {
-                                    intParameter.ranges.Add(new IntRange { minimum = int.Parse(match.Groups["min"].Value), maximum = int.Parse(match.Groups["max"].Value) });
-                                    state = ParserState.VALUESPACE_TERM_DEFINITION;
+                                    intParameter.Ranges.Add(new IntRange { Minimum = int.Parse(match.Groups["min"].Value), Maximum = int.Parse(match.Groups["max"].Value) });
+                                    state = ParserState.ValuespaceTermDefinition;
                                 } else if (parameter is IntParameter intParameter2 && int.TryParse(word.Text, out int match3)) {
-                                    intParameter2.ranges.Add(new IntRange { minimum = match3, maximum = match3 });
-                                    state = ParserState.VALUESPACE_TERM_DEFINITION;
+                                    intParameter2.Ranges.Add(new IntRange { Minimum = match3, Maximum = match3 });
+                                    state = ParserState.ValuespaceTermDefinition;
                                 } else {
-                                    parameter.description = appendWord(parameter.description, word, previousWordBaseline);
-                                    state                 = ParserState.USAGE_PARAMETER_DESCRIPTION;
+                                    parameter.Description = AppendWord(parameter.Description, word, previousWordBaseline);
+                                    state                 = ParserState.UsageParameterDescription;
                                 }
-                            } else if (word.Text == ":" && state == ParserState.VALUESPACE) {
+                            } else if (word.Text == ":" && state == ParserState.Valuespace) {
                                 //the colon after the parameter name, usually it's part of the word with PARAMETER_NAME character style but sometimes it's tokenized as a separate word
                                 //skip
-                            } else if (command is DocXStatus _status) {
-                                _status.returnValueSpace.description = appendWord(_status.returnValueSpace.description, word, previousWordBaseline);
-                                state                                = ParserState.VALUESPACE_DESCRIPTION;
+                            } else if (command is DocXStatus status2) {
+                                status2.ReturnValueSpace.Description = AppendWord(status2.ReturnValueSpace.Description, word, previousWordBaseline);
+                                state                                = ParserState.ValuespaceDescription;
                             } else if (command is DocXConfiguration config && word.Text == "Unique" /*&& ((List<string>) [
                                            "xConfiguration Audio Input MicrophoneMode",
                                            "xConfiguration Audio Microphones BeamMix Inputs",
                                            "xConfiguration Audio Microphones NearTalkerSector Mode",
                                            "xConfiguration Audio Microphones PhantomPower"
                                        ]).Any(method => config.name.SequenceEqual(method.Split(' ')))*/) {
-                                parameter = new IntParameter { name = "n", description = "DELETE ME" };
-                                state     = ParserState.VALUESPACE_TERM_DEFINITION;
+                                parameter = new IntParameter { Name = "n", Description = "DELETE ME" };
+                                state     = ParserState.ValuespaceTermDefinition;
                             } else {
                                 throw new ParsingException(word, state, characterStyle, page, "no current parameter to append description to");
                             }
 
                             break;
-                        case ParserState.VALUESPACE_TERM_DEFINITION:
+                        case ParserState.ValuespaceTermDefinition:
                             if (enumValue is not null) {
-                                enumValue.description = appendWord(enumValue.description, word, previousWordBaseline);
-                            } else if ((parameter as IntParameter)?.ranges.LastOrDefault() is { } lastRange) {
-                                lastRange.description = appendWord(lastRange.description, word, previousWordBaseline);
+                                enumValue.Description = AppendWord(enumValue.Description, word, previousWordBaseline);
+                            } else if ((parameter as IntParameter)?.Ranges.LastOrDefault() is { } lastRange) {
+                                lastRange.Description = AppendWord(lastRange.Description, word, previousWordBaseline);
                             }
 
                             break;
-                        case ParserState.USAGE_DEFAULT_VALUE_HEADING:
+                        case ParserState.UsageDefaultValueHeading:
                             if (word.Text == "value:") {
-                                state = ParserState.USAGE_DEFAULT_VALUE;
+                                state = ParserState.UsageDefaultValue;
                             } else {
                                 throw new ParsingException(word, state, characterStyle, page, "unexpected word for state and character style");
                             }
 
                             break;
-                        case ParserState.USAGE_DEFAULT_VALUE when parameter is not null:
+                        case ParserState.UsageDefaultValue when parameter is not null:
                             switch (parameter) {
                                 case IntParameter param:
-                                    param.defaultValue = word.Text;
+                                    param.DefaultValue = word.Text;
                                     break;
                                 case EnumParameter param:
-                                    param.defaultValue = word.Text;
+                                    param.DefaultValue = word.Text;
                                     break;
                                 case StringParameter param:
-                                    param.defaultValue = param.defaultValue is null ? word.Text.TrimStart('"') : word.Text;
+                                    param.DefaultValue = param.DefaultValue is null ? word.Text.TrimStart('"') : word.Text;
                                     break;
                             }
 
                             break;
-                        case ParserState.REQUIRES_USER_ROLE_ROLES or ParserState.DESCRIPTION:
-                            if (word.Text == "Value" && isDifferentParagraph(word, previousWordBaseline) && command is DocXStatus) {
-                                state = ParserState.DESCRIPTION_VALUE_SPACE_HEADING;
+                        case ParserState.RequiresUserRoleRoles or ParserState.Description:
+                            if (word.Text == "Value" && IsDifferentParagraph(word, previousWordBaseline) && command is DocXStatus) {
+                                state = ParserState.DescriptionValueSpaceHeading;
                             } else {
-                                state               = ParserState.DESCRIPTION;
-                                command.description = appendWord(command.description, word, previousWordBaseline);
+                                state               = ParserState.Description;
+                                command.Description = AppendWord(command.Description, word, previousWordBaseline);
                             }
 
                             break;
-                        case ParserState.DESCRIPTION_VALUE_SPACE_HEADING when command is DocXStatus && !isDifferentParagraph(word, previousWordBaseline):
+                        case ParserState.DescriptionValueSpaceHeading when command is DocXStatus && !IsDifferentParagraph(word, previousWordBaseline):
                             if (word.Text == "returned:") {
-                                state = ParserState.VALUESPACE;
-                            } else if (!XSTATUS_DESCRIPTION_VALUE_SPACE_HEADING_WORDS.Contains(word.Text)) {
+                                state = ParserState.Valuespace;
+                            } else if (!XstatusDescriptionValueSpaceHeadingWords.Contains(word.Text)) {
                                 throw new ParsingException(word, state, characterStyle, page, "xStatus description contained a paragraph that started looking like it was the \"Value space of " +
                                     $"the result returned:\" heading, but it wasn't because it contained the word {word.Text}. Please implement a buffer for this situation to put this paragraph in " +
                                     "the description.");
@@ -753,7 +753,7 @@ public static class PdfReader {
         }
     }
 
-    private static ISet<EnumValue> guessEnumRange(IList<string> split) {
+    private static ISet<EnumValue> GuessEnumRange(IList<string> split) {
         split = new List<string>(split); // in case it was fixed-size from string[]
         IEnumerable<string> allValues = split;
 
@@ -790,13 +790,13 @@ public static class PdfReader {
         return allValues.Select(s => new EnumValue(s)).ToHashSet();
     }
 
-    private static ISet<EnumValue> parseEnumValueSpacePossibleValues(string enumList, string delimiter = "/") =>
-        parseEnumValueSpacePossibleValues(enumList.TrimEnd(')').Split(delimiter, StringSplitOptions.RemoveEmptyEntries));
+    private static ISet<EnumValue> ParseEnumValueSpacePossibleValues(string enumList, string delimiter = "/") =>
+        ParseEnumValueSpacePossibleValues(enumList.TrimEnd(')').Split(delimiter, StringSplitOptions.RemoveEmptyEntries));
 
-    private static ISet<EnumValue> parseEnumValueSpacePossibleValues(IEnumerable<string> enumList) => enumList.Select(value => new EnumValue(value)).ToHashSet();
+    private static ISet<EnumValue> ParseEnumValueSpacePossibleValues(IEnumerable<string> enumList) => enumList.Select(value => new EnumValue(value)).ToHashSet();
 
-    private static string appendWord(string? head, Word tail, double? previousWordBaseline) {
-        double baselineDifference = getBaselineDifference(tail, previousWordBaseline);
+    private static string AppendWord(string? head, Word tail, double? previousWordBaseline) {
+        double baselineDifference = GetBaselineDifference(tail, previousWordBaseline);
         bool   isDifferentLine    = baselineDifference > 3;
         string wordSeparator;
 
@@ -805,7 +805,7 @@ public static class PdfReader {
         } else if (isDifferentLine && (head.EndsWith('-') || head.EndsWith('/'))) {
             head          = head.TrimEnd('-', '/');
             wordSeparator = string.Empty;
-        } else if (isDifferentParagraph(baselineDifference)) {
+        } else if (IsDifferentParagraph(baselineDifference)) {
             wordSeparator = "\n";
         } else {
             wordSeparator = " ";
@@ -814,12 +814,12 @@ public static class PdfReader {
         return (head ?? string.Empty) + wordSeparator + tail.Text;
     }
 
-    private static double getBaselineDifference(Word tail, double? previousWordBaseline) {
+    private static double GetBaselineDifference(Word tail, double? previousWordBaseline) {
         return previousWordBaseline is not null ? Math.Abs(tail.Letters[0].StartBaseLine.Y - (double) previousWordBaseline) : 0;
     }
 
-    private static bool isDifferentParagraph(double baselineDifference) => baselineDifference > 10;
-    private static bool isDifferentParagraph(Word word, double? previousWordBaseline) => isDifferentParagraph(getBaselineDifference(word, previousWordBaseline));
+    private static bool IsDifferentParagraph(double baselineDifference) => baselineDifference > 10;
+    private static bool IsDifferentParagraph(Word word, double? previousWordBaseline) => IsDifferentParagraph(GetBaselineDifference(word, previousWordBaseline));
 
     private static IEnumerable<(Word word, Page page)> getWordsOnPages(PdfDocument pdf, Range pageIndices) {
         int[] pageNumbers = Enumerable.Range(0, pdf.NumberOfPages).ToArray()[pageIndices];
@@ -827,7 +827,7 @@ public static class PdfReader {
             foreach (bool readLeftSide in new[] { true, false }) {
                 Page           page = pdf.GetPage(pageNumber);
                 IWordExtractor wordExtractor;
-                wordExtractor = FixedDefaultWordExtractor.INSTANCE;
+                wordExtractor = FixedDefaultWordExtractor.Instance;
                 IReadOnlyList<Letter> lettersWithUnfuckedQuotationMarks = page.Letters
                     .Where(letter => isTextOnHalfOfPage(letter, page, readLeftSide))
                     .Select(letter => new Letter(
@@ -864,23 +864,23 @@ public static class PdfReader {
         return bookmarksInSection.First().PageNumber..bookmarksInSection.Last().PageNumber;
     }
 
-    internal static CharacterStyle getCharacterStyle(Word word) {
+    internal static CharacterStyle GetCharacterStyle(Word word) {
         return getFirstNonQuotationMarkLetter(word.Letters) switch {
-            { PointSize: 16.0 }                                                                                                    => CharacterStyle.METHOD_FAMILY_HEADING,
-            { PointSize: 10.0 }                                                                                                    => CharacterStyle.METHOD_NAME_HEADING,
-            { FontName: var font, Color: var color } when font.EndsWith("CiscoSansTT-Oblique") && color.Equals(PRODUCT_NAME_COLOR) => CharacterStyle.PRODUCT_NAME,
-            { PointSize: 8.0, FontName: var font } when font.EndsWith("CiscoSansTT")                                               => CharacterStyle.USAGE_HEADING,
-            { PointSize: 8.8 or 9.6, FontName: var font } when font.EndsWith("CourierNewPSMT")                                     => CharacterStyle.USAGE_EXAMPLE,
-            { PointSize: 8.8, FontName: var font } when font.EndsWith("CourierNewPS-ItalicMT")                                     => CharacterStyle.PARAMETER_NAME,
-            { PointSize: 8.0, FontName: var font } when font.EndsWith("CiscoSansTTLight-Oblique")                                  => CharacterStyle.VALUESPACE_OR_DISCLAIMER,
-            { PointSize: 8.0, FontName: var font } when font.EndsWith("CiscoSansTT-Oblique")                                       => CharacterStyle.VALUESPACE_TERM,
-            _                                                                                                                      => CharacterStyle.BODY
+            { PointSize: 16.0 }                                                                                                  => CharacterStyle.MethodFamilyHeading,
+            { PointSize: 10.0 }                                                                                                  => CharacterStyle.MethodNameHeading,
+            { FontName: var font, Color: var color } when font.EndsWith("CiscoSansTT-Oblique") && color.Equals(ProductNameColor) => CharacterStyle.ProductName,
+            { PointSize: 8.0, FontName: var font } when font.EndsWith("CiscoSansTT")                                             => CharacterStyle.UsageHeading,
+            { PointSize: 8.8 or 9.6, FontName: var font } when font.EndsWith("CourierNewPSMT")                                   => CharacterStyle.UsageExample,
+            { PointSize: 8.8, FontName: var font } when font.EndsWith("CourierNewPS-ItalicMT")                                   => CharacterStyle.ParameterName,
+            { PointSize: 8.0, FontName: var font } when font.EndsWith("CiscoSansTTLight-Oblique")                                => CharacterStyle.ValuespaceOrDisclaimer,
+            { PointSize: 8.0, FontName: var font } when font.EndsWith("CiscoSansTT-Oblique")                                     => CharacterStyle.ValuespaceTerm,
+            _                                                                                                                    => CharacterStyle.Body
         };
     }
 
-    private static T? parseEnum<T>(string text) where T: struct, Enum => Enum.IsDefined(typeof(T), text) && Enum.TryParse(text, true, out T result) ? result : null;
+    private static T? ParseEnum<T>(string text) where T: struct, Enum => Enum.TryParse(text, true, out T result) ? result : null;
 
-    private static Product? parseProduct(string text) => parseEnum<Product>(text.Replace('/', '_'));
+    private static Product? ParseProduct(string text) => ParseEnum<Product>(text.Replace('/', '_'));
 
     internal static Letter getFirstNonQuotationMarkLetter(IReadOnlyList<Letter> letters) {
         return letters.SkipWhile(letter => letter.Value == "\"").FirstOrDefault(letters[0]);
@@ -890,69 +890,69 @@ public static class PdfReader {
 
     internal static bool isTextOnHalfOfPage(Letter letter, Page page, bool isOnLeft) {
 
-        const int POINTS_PER_INCH = 72;
+        const int pointsPerInch = 72;
 
-        const double LEFT_MARGIN   = 5.0 / 8.0 * POINTS_PER_INCH;
-        const double TOP_MARGIN    = 1.0 * POINTS_PER_INCH;
-        const double BOTTOM_MARGIN = POINTS_PER_INCH * 0.5;
+        const double leftMargin   = 5.0 / 8.0 * pointsPerInch;
+        const double topMargin    = 1.0 * pointsPerInch;
+        const double bottomMargin = pointsPerInch * 0.5;
 
-        return letter.Location.Y > BOTTOM_MARGIN
-            && letter.Location.Y < page.Height - TOP_MARGIN
-            && (letter.Location.X < (page.Width - LEFT_MARGIN) / 2 + LEFT_MARGIN) ^ !isOnLeft
-            && letter.Location.X > LEFT_MARGIN;
+        return letter.Location.Y > bottomMargin
+            && letter.Location.Y < page.Height - topMargin
+            && (letter.Location.X < (page.Width - leftMargin) / 2 + leftMargin) ^ !isOnLeft
+            && letter.Location.X > leftMargin;
     }
 
 }
 
 internal class ParsingException: Exception {
 
-    public Word word { get; }
-    public ParserState state { get; }
-    public CharacterStyle characterStyle { get; }
-    public Page page { get; }
+    public Word Word { get; }
+    public ParserState State { get; }
+    public CharacterStyle CharacterStyle { get; }
+    public Page Page { get; }
 
     public ParsingException(Word word, ParserState state, CharacterStyle characterStyle, Page page, string message): base(message) {
-        this.word           = word;
-        this.state          = state;
-        this.characterStyle = characterStyle;
-        this.page           = page;
+        Word           = word;
+        State          = state;
+        CharacterStyle = characterStyle;
+        Page           = page;
     }
 
 }
 
 internal enum CharacterStyle {
 
-    METHOD_FAMILY_HEADING,
-    METHOD_NAME_HEADING,
-    PRODUCT_NAME,
-    USAGE_HEADING,
-    USAGE_EXAMPLE,
-    PARAMETER_NAME,
-    VALUESPACE_OR_DISCLAIMER,
-    VALUESPACE_TERM,
-    BODY
+    MethodFamilyHeading,
+    MethodNameHeading,
+    ProductName,
+    UsageHeading,
+    UsageExample,
+    ParameterName,
+    ValuespaceOrDisclaimer,
+    ValuespaceTerm,
+    Body
 
 }
 
 internal enum ParserState {
 
-    START,
-    VERSION_AND_PRODUCTS_COVERED_PREAMBLE,
-    METHOD_NAME_HEADING,
-    APPLIES_TO,
-    APPLIES_TO_PRODUCTS,
-    REQUIRES_USER_ROLE,
-    REQUIRES_USER_ROLE_ROLES,
-    DESCRIPTION,
-    USAGE_EXAMPLE,                          //the xCommand or similar example invocation, directly below the "USAGE:" heading
-    USAGE_PARAMETER_NAME,                   //the name of the parameter underneath the "where"
-    USAGE_PARAMETER_DESCRIPTION,            //the regular description of the parameter, underneath the valuespace summary and above the value space descriptions
-    VALUESPACE,                             //the italic text for each parameter that says whether it's an Integer, String, or the slash-separated enum values
-    VALUESPACE_TERM_DEFINITION,             //the text to the right of the bold enum value name that describes the parameter value
-    USAGE_PARAMETER_VALUE_SPACE_APPLIES_TO, //says which products a value space applies to, as italic text to the right of the valuespace
-    USAGE_DEFAULT_VALUE_HEADING,            //the xConfiguration "Default value:" heading
-    USAGE_DEFAULT_VALUE,                    //the xConfiguration default valuespace
-    DESCRIPTION_VALUE_SPACE_HEADING,        //the xStatus "Value space of the result returned:" heading
-    VALUESPACE_DESCRIPTION                  //the xStatus explanation of the valuespace below the italic text, which can include bold terms and definitions or just free text
+    Start,
+    VersionAndProductsCoveredPreamble,
+    MethodNameHeading,
+    AppliesTo,
+    AppliesToProducts,
+    RequiresUserRole,
+    RequiresUserRoleRoles,
+    Description,
+    UsageExample,                      //the xCommand or similar example invocation, directly below the "USAGE:" heading
+    UsageParameterName,                //the name of the parameter underneath the "where"
+    UsageParameterDescription,         //the regular description of the parameter, underneath the valuespace summary and above the value space descriptions
+    Valuespace,                        //the italic text for each parameter that says whether it's an Integer, String, or the slash-separated enum values
+    ValuespaceTermDefinition,          //the text to the right of the bold enum value name that describes the parameter value
+    UsageParameterValueSpaceAppliesTo, //says which products a value space applies to, as italic text to the right of the valuespace
+    UsageDefaultValueHeading,          //the xConfiguration "Default value:" heading
+    UsageDefaultValue,                 //the xConfiguration default valuespace
+    DescriptionValueSpaceHeading,      //the xStatus "Value space of the result returned:" heading
+    ValuespaceDescription              //the xStatus explanation of the valuespace below the italic text, which can include bold terms and definitions or just free text
 
 }

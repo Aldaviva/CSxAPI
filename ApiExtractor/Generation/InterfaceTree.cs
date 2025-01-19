@@ -2,18 +2,18 @@
 
 namespace ApiExtractor.Generation;
 
-public interface InterfaceChild { }
+public interface INterfaceChild { }
 
-public class InterfaceMethod<T>: InterfaceChild {
+public class InterfaceMethod<T>: INterfaceChild {
 
     public InterfaceMethod(T command) {
-        this.command = command;
+        Command = command;
     }
 
-    public T command { get; }
+    public T Command { get; }
 
     private bool Equals(InterfaceMethod<T> other) {
-        return EqualityComparer<T>.Default.Equals(command, other.command);
+        return EqualityComparer<T>.Default.Equals(Command, other.Command);
     }
 
     public override bool Equals(object? obj) {
@@ -24,7 +24,7 @@ public class InterfaceMethod<T>: InterfaceChild {
     }
 
     public override int GetHashCode() {
-        return EqualityComparer<T>.Default.GetHashCode(command!);
+        return EqualityComparer<T>.Default.GetHashCode(Command!);
     }
 
     public static bool operator ==(InterfaceMethod<T>? left, InterfaceMethod<T>? right) {
@@ -37,18 +37,18 @@ public class InterfaceMethod<T>: InterfaceChild {
 
 }
 
-public class Subinterface<T>: InterfaceChild {
+public class Subinterface<T>: INterfaceChild {
 
     public Subinterface(string interfaceName, string getterName) {
-        this.interfaceName = interfaceName;
-        this.getterName    = getterName;
+        InterfaceName = interfaceName;
+        GetterName    = getterName;
     }
 
-    public string interfaceName { get; }
-    public string getterName { get; }
+    public string InterfaceName { get; }
+    public string GetterName { get; }
 
     private bool Equals(Subinterface<T> other) {
-        return interfaceName == other.interfaceName;
+        return InterfaceName == other.InterfaceName;
     }
 
     public override bool Equals(object? obj) {
@@ -59,7 +59,7 @@ public class Subinterface<T>: InterfaceChild {
     }
 
     public override int GetHashCode() {
-        return interfaceName.GetHashCode();
+        return InterfaceName.GetHashCode();
     }
 
     public static bool operator ==(Subinterface<T>? left, Subinterface<T>? right) {

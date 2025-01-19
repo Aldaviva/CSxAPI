@@ -7,42 +7,42 @@ namespace ApiExtractor.Extraction;
 
 public class ExtractedDocumentation {
 
-    public ICollection<DocXCommand> commands { get; set; } = new List<DocXCommand>();
-    public ICollection<DocXConfiguration> configurations { get; set; } = new List<DocXConfiguration>();
-    public ICollection<DocXStatus> statuses { get; set; } = new List<DocXStatus>();
-    public ICollection<DocXEvent> events { get; set; } = new List<DocXEvent>();
+    public ICollection<DocXCommand> Commands { get; set; } = new List<DocXCommand>();
+    public ICollection<DocXConfiguration> Configurations { get; set; } = new List<DocXConfiguration>();
+    public ICollection<DocXStatus> Statuses { get; set; } = new List<DocXStatus>();
+    public ICollection<DocXEvent> Events { get; set; } = new List<DocXEvent>();
 
 }
 
 public interface IPathNamed {
 
-    public IList<string> name { get; init; }
-    public IList<string> nameWithoutBrackets { get; }
+    public IList<string> Name { get; init; }
+    public IList<string> NameWithoutBrackets { get; }
 
 }
 
 public abstract class AbstractCommand: IPathNamed {
 
-    public IList<string> name { get; init; } = new List<string>();
-    public virtual IList<string> nameWithoutBrackets => name;
-    public ISet<Product> appliesTo { get; set; } = new HashSet<Product>();
-    public ISet<UserRole> requiresUserRole { get; set; } = new HashSet<UserRole>();
-    public string description { get; set; } = string.Empty;
+    public IList<string> Name { get; init; } = new List<string>();
+    public virtual IList<string> NameWithoutBrackets => Name;
+    public ISet<Product> AppliesTo { get; set; } = new HashSet<Product>();
+    public ISet<UserRole> RequiresUserRole { get; set; } = new HashSet<UserRole>();
+    public string Description { get; set; } = string.Empty;
 
     public override string ToString() {
-        return string.Join(" ", name);
+        return string.Join(" ", Name);
     }
 
 }
 
 public enum UserRole {
 
-    ADMIN,
-    INTEGRATOR,
-    USER,
-    AUDIT,
-    ROOMCONTROL,
-    TOUCHUSER
+    Admin,
+    Integrator,
+    User,
+    Audit,
+    Roomcontrol,
+    Touchuser
 
 }
 
@@ -74,62 +74,62 @@ public enum Product {
 
 public class DocXConfiguration: AbstractCommand {
 
-    public ICollection<Parameter> parameters { get; set; } = new List<Parameter>();
+    public ICollection<Parameter> Parameters { get; set; } = new List<Parameter>();
 
-    public override IList<string> nameWithoutBrackets =>
+    public override IList<string> NameWithoutBrackets =>
         // name.Where((s, i) => !parameters.Any(parameter => parameter is IntParameter { indexOfParameterInName: { } paramIndex } && paramIndex == i)).ToList();
-        name.Select((s, i) => parameters.Any(parameter => parameter is IntParameter { indexOfParameterInName: { } paramIndex } && paramIndex == i) ? "N" : s).ToList();
+        Name.Select((s, i) => Parameters.Any(parameter => parameter is IntParameter { IndexOfParameterInName: { } paramIndex } && paramIndex == i) ? "N" : s).ToList();
 
 }
 
 public abstract class Parameter {
 
-    public string name { get; set; } = default!;
-    public string description { get; set; } = string.Empty;
-    public string? valueSpaceDescription { get; set; }
-    public bool required { get; set; }
-    public string? defaultValue { get; set; }
-    public ISet<Product>? appliesTo { get; set; }
+    public string Name { get; set; } = null!;
+    public string Description { get; set; } = string.Empty;
+    public string? ValueSpaceDescription { get; set; }
+    public bool Required { get; set; }
+    public string? DefaultValue { get; set; }
+    public ISet<Product>? AppliesTo { get; set; }
 
-    public abstract DataType type { get; }
+    public abstract DataType Type { get; }
 
 }
 
 public enum DataType {
 
-    INTEGER,
-    STRING,
-    ENUM
+    Integer,
+    String,
+    Enum
 
 }
 
 public class IntParameter: Parameter {
 
-    public int? indexOfParameterInName { get; set; }
-    public ICollection<IntRange> ranges { get; set; } = new List<IntRange>();
-    public override DataType type => DataType.INTEGER;
-    public string? namePrefix { get; set; }
+    public int? IndexOfParameterInName { get; set; }
+    public ICollection<IntRange> Ranges { get; set; } = new List<IntRange>();
+    public override DataType Type => DataType.Integer;
+    public string? NamePrefix { get; set; }
 
 }
 
-internal class EnumParameter: Parameter, EnumValues {
+internal class EnumParameter: Parameter, IEnumValues {
 
-    public ISet<EnumValue> possibleValues { get; set; } = default!;
-    public override DataType type => DataType.ENUM;
+    public ISet<EnumValue> PossibleValues { get; set; } = null!;
+    public override DataType Type => DataType.Enum;
 
 }
 
 public class EnumValue {
 
     public EnumValue(string name) {
-        this.name = name;
+        Name = name;
     }
 
-    public string name { get; set; }
-    public string? description { get; set; }
+    public string Name { get; set; }
+    public string? Description { get; set; }
 
     protected bool Equals(EnumValue other) {
-        return string.Equals(name, other.name, StringComparison.InvariantCultureIgnoreCase);
+        return string.Equals(Name, other.Name, StringComparison.InvariantCultureIgnoreCase);
     }
 
     public override bool Equals(object? obj) {
@@ -140,7 +140,7 @@ public class EnumValue {
     }
 
     public override int GetHashCode() {
-        return StringComparer.InvariantCultureIgnoreCase.GetHashCode(name);
+        return StringComparer.InvariantCultureIgnoreCase.GetHashCode(Name);
     }
 
     public static bool operator ==(EnumValue? left, EnumValue? right) {
@@ -155,9 +155,9 @@ public class EnumValue {
 
 internal class StringParameter: Parameter {
 
-    public int minimumLength { get; set; }
-    public int maximumLength { get; set; }
-    public override DataType type => DataType.STRING;
+    public int MinimumLength { get; set; }
+    public int MaximumLength { get; set; }
+    public override DataType Type => DataType.String;
 
 }
 
@@ -165,68 +165,68 @@ public class DocXCommand: DocXConfiguration { }
 
 public class DocXStatus: AbstractCommand {
 
-    public ICollection<IntParameter> arrayIndexParameters { get; } = new List<IntParameter>();
-    public ValueSpace returnValueSpace { get; set; } = default!;
+    public ICollection<IntParameter> ArrayIndexParameters { get; } = new List<IntParameter>();
+    public ValueSpace ReturnValueSpace { get; set; } = null!;
 
-    public override IList<string> nameWithoutBrackets =>
+    public override IList<string> NameWithoutBrackets =>
         // name.Where((s, i) => !arrayIndexParameters.Any(parameter => parameter is { indexOfParameterInName: { } paramIndex } && paramIndex == i)).ToList();
-        name.Select((s, i) => arrayIndexParameters.Any(parameter => parameter is { indexOfParameterInName: { } paramIndex } && paramIndex == i) ? "N" : s).ToList();
+        Name.Select((s, i) => ArrayIndexParameters.Any(parameter => parameter is { IndexOfParameterInName: { } paramIndex } && paramIndex == i) ? "N" : s).ToList();
 
 }
 
 public abstract class ValueSpace {
 
-    public abstract DataType type { get; }
-    public string? description { get; set; }
+    public abstract DataType Type { get; }
+    public string? Description { get; set; }
 
 }
 
 internal class IntValueSpace: ValueSpace {
 
-    public ICollection<IntRange> ranges = new List<IntRange>();
-    public override DataType type => DataType.INTEGER;
+    public ICollection<IntRange> Ranges = new List<IntRange>();
+    public override DataType Type => DataType.Integer;
 
     /// <summary>
     /// How the null value for this int valuespace is serialized.
     /// For example, xStatus Network [n] VLAN Voice VlanId returns an integer in the range [1, 4094], or the string "Off" if the VLAN Voice Mode is not enabled.
     /// If set, this string will get translated to null when reading this status. In most cases, this property should be null.
     /// </summary>
-    public string? optionalValue { get; set; }
+    public string? OptionalValue { get; set; }
 
 }
 
-internal interface EnumValues {
+internal interface IEnumValues {
 
-    ISet<EnumValue> possibleValues { get; set; }
+    ISet<EnumValue> PossibleValues { get; set; }
 
 }
 
-internal class EnumValueSpace: ValueSpace, EnumValues {
+internal class EnumValueSpace: ValueSpace, IEnumValues {
 
-    public ISet<EnumValue> possibleValues { get; set; } = default!;
-    public override DataType type => DataType.ENUM;
+    public ISet<EnumValue> PossibleValues { get; set; } = null!;
+    public override DataType Type => DataType.Enum;
 
 }
 
 internal class StringValueSpace: ValueSpace {
 
-    public override DataType type => DataType.STRING;
+    public override DataType Type => DataType.String;
 
 }
 
 public class IntRange {
 
-    public int minimum { get; set; }
-    public int maximum { get; set; }
-    public string? description { get; set; }
-    public ISet<Product> appliesTo { get; set; } = new HashSet<Product>();
+    public int Minimum { get; set; }
+    public int Maximum { get; set; }
+    public string? Description { get; set; }
+    public ISet<Product> AppliesTo { get; set; } = new HashSet<Product>();
 
 }
 
 public class DocXEvent: IEventParent, IPathNamed {
 
-    public IList<string> name { get; init; } = new List<string>();
-    public IList<string> nameWithoutBrackets => name;
+    public IList<string> Name { get; init; } = new List<string>();
+    public IList<string> NameWithoutBrackets => Name;
 
     // TODO parameters are actually not just a flat list, they can be arbitrarily nested (up to 6 layers deep in practice)
     // see "csxapi todo.txt"
@@ -235,77 +235,77 @@ public class DocXEvent: IEventParent, IPathNamed {
     // Maybe an IDictionary<int, object> would be better, because then consumers can use Indexer accessors or get all the entries if they want to enumerate them
     // public ICollection<Parameter> parameters { get; set; } = new List<Parameter>();
 
-    public IList<EventChild> children { get; set; } = new List<EventChild>();
+    public IList<EventChild> Children { get; set; } = new List<EventChild>();
 
-    public ISet<UserRole> requiresUserRole { get; set; } = new HashSet<UserRole>();
-    public EventAccess access { get; set; }
+    public ISet<UserRole> RequiresUserRole { get; set; } = new HashSet<UserRole>();
+    public EventAccess Access { get; set; }
 
 }
 
 public enum EventAccess {
 
-    PUBLIC_API,
-    PUBLIC_API_PREVIEW,
-    INTERNAL,
-    INTERNAL_RESTRICTED
+    PublicAPI,
+    PublicAPIPreview,
+    Internal,
+    InternalRestricted
 
 }
 
 public static class EventAccessParser {
 
-    public static EventAccess parse(string serialized) => serialized.ToLowerInvariant() switch {
-        "public-api"          => EventAccess.PUBLIC_API,
-        "public-api-preview"  => EventAccess.PUBLIC_API_PREVIEW,
-        "internal"            => EventAccess.INTERNAL,
-        "internal-restricted" => EventAccess.INTERNAL_RESTRICTED,
+    public static EventAccess Parse(string serialized) => serialized.ToLowerInvariant() switch {
+        "public-api"          => EventAccess.PublicAPI,
+        "public-api-preview"  => EventAccess.PublicAPIPreview,
+        "internal"            => EventAccess.Internal,
+        "internal-restricted" => EventAccess.InternalRestricted,
     };
 
 }
 
 public abstract class EventChild: IPathNamed {
 
-    public IList<string> name { get; init; } = null!;
-    public IList<string> nameWithoutBrackets => name;
+    public IList<string> Name { get; init; } = null!;
+    public IList<string> NameWithoutBrackets => Name;
 
 }
 
 public interface IEventParent: IPathNamed {
 
-    IList<EventChild> children { get; set; }
+    IList<EventChild> Children { get; set; }
 
 }
 
 public class ListContainer: EventChild, IEventParent {
 
-    public IList<EventChild> children { get; set; } = new List<EventChild>();
+    public IList<EventChild> Children { get; set; } = new List<EventChild>();
 
 }
 
 public class ObjectContainer: EventChild, IEventParent {
 
-    public IList<EventChild> children { get; set; } = new List<EventChild>();
-    public bool required { get; set; } = true;
+    public IList<EventChild> Children { get; set; } = new List<EventChild>();
+    public bool Required { get; set; } = true;
 
 }
 
 public abstract class ValueChild: EventChild {
 
-    public abstract DataType type { get; }
-    public abstract bool required { get; set; }
+    public abstract DataType Type { get; }
+    public abstract bool Required { get; set; }
 
 }
 
 public class StringChild: ValueChild {
 
-    public override DataType type => DataType.STRING;
-    public override bool required { get; set; }
+    public override DataType Type => DataType.String;
+    public override bool Required { get; set; }
 
 }
 
 public class IntChild: ValueChild {
 
-    public override DataType type => DataType.INTEGER;
-    public override bool required { get; set; }
+    public override DataType Type => DataType.Integer;
+    public override bool Required { get; set; }
 
     /// <summary>
     /// This is not a named property inside an event.
@@ -321,14 +321,14 @@ public class IntChild: ValueChild {
     /// </c>
     /// Used by <c>Standby/SecondsToStandby</c> and <c>RoomReset/SecondsToReset</c>.
     /// </summary>
-    public bool implicitAnonymousSingleton { get; set; } = false;
+    public bool ImplicitAnonymousSingleton { get; set; } = false;
 
 }
 
 public class EnumChild: ValueChild {
 
-    public override DataType type => DataType.ENUM;
-    public override bool required { get; set; }
-    public ISet<EnumValue> possibleValues { get; set; } = default!;
+    public override DataType Type => DataType.Enum;
+    public override bool Required { get; set; }
+    public ISet<EnumValue> PossibleValues { get; set; } = null!;
 
 }

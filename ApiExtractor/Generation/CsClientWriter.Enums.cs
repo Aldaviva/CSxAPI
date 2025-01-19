@@ -9,35 +9,35 @@ namespace ApiExtractor.Generation;
 
 public static partial class CsClientWriter {
 
-    private static async Task writeEnums(ExtractedDocumentation documentation) {
-        await using StreamWriter enumsWriter          = openFileStream("Data\\Enums.cs");
-        await using StreamWriter enumSerializerWriter = openFileStream("Serialization\\EnumSerializer.cs");
+    private static async Task WriteEnums(ExtractedDocumentation documentation) {
+        await using StreamWriter enumsWriter          = OpenFileStream("Data\\Enums.cs");
+        await using StreamWriter enumSerializerWriter = OpenFileStream("Serialization\\EnumSerializer.cs");
 
         await enumsWriter.WriteAsync($"""
-                                      {FILE_HEADER}
+                                      {FileHeader}
 
                                       using System.CodeDom.Compiler;
 
-                                      namespace {NAMESPACE}.API.Data;
+                                      namespace {Namespace}.API.Data;
 
                                       """);
 
-        foreach (DocXConfiguration command in documentation.commands.Concat(documentation.configurations)) {
-            await enumsWriter.WriteAsync(string.Join(null, command.parameters.Where(parameter => parameter.type == DataType.ENUM).Cast<EnumParameter>().Select(parameter => {
-                string enumTypeName = getEnumName(command, parameter.name);
-                enumsGenerated++;
+        foreach (DocXConfiguration command in documentation.Commands.Concat(documentation.Configurations)) {
+            await enumsWriter.WriteAsync(string.Join(null, command.Parameters.Where(parameter => parameter.Type == DataType.Enum).Cast<EnumParameter>().Select(parameter => {
+                string enumTypeName = GetEnumName(command, parameter.Name);
+                _enumsGenerated++;
 
                 return $$"""
 
-                         /// <summary>For use with <see cref="{{getInterfaceName(command)}}.{{command.nameWithoutBrackets.Last()}}{{$"({string.Join(", ", command.parameters.OrderByDescending(p => p.required).Select(p => $"{p.type switch {
-                             DataType.INTEGER => "int",
-                             DataType.STRING  => "string",
-                             DataType.ENUM    => getEnumName(command, p.name)
-                         }}{(p.required ? "" : "?")}"))})"}}" /></summary>
-                         {{GENERATED_ATTRIBUTE}}
+                         /// <summary>For use with <see cref="{{GetInterfaceName(command)}}.{{command.NameWithoutBrackets.Last()}}{{$"({string.Join(", ", command.Parameters.OrderByDescending(p => p.Required).Select(p => $"{p.Type switch {
+                             DataType.Integer => "int",
+                             DataType.String  => "string",
+                             DataType.Enum    => GetEnumName(command, p.Name)
+                         }}{(p.Required ? "" : "?")}"))})"}}" /></summary>
+                         {{GeneratedAttribute}}
                          public enum {{enumTypeName}} {
 
-                         {{string.Join(",\r\n\r\n", parameter.possibleValues.Select(value => $"    /// <summary><para><c>{value.name}</c>{(value.description is not null ? ": " + value.description.NewLinesToParagraphs(true) : "")}</para></summary>\r\n    {xapiEnumValueToCsIdentifier(command, parameter, value)}"))}}
+                         {{string.Join(",\r\n\r\n", parameter.PossibleValues.Select(value => $"    /// <summary><para><c>{value.Name}</c>{(value.Description is not null ? ": " + value.Description.NewLinesToParagraphs(true) : "")}</para></summary>\r\n    {XapiEnumValueToCsIdentifier(command, parameter, value)}"))}}
 
                          }
 
@@ -45,60 +45,60 @@ public static partial class CsClientWriter {
             })));
         }
 
-        foreach (DocXStatus xStatus in documentation.statuses.Where(status => status.returnValueSpace.type == DataType.ENUM)) {
-            EnumValueSpace valueSpace   = (EnumValueSpace) xStatus.returnValueSpace;
-            string         enumTypeName = getEnumName(xStatus);
+        foreach (DocXStatus xStatus in documentation.Statuses.Where(status => status.ReturnValueSpace.Type == DataType.Enum)) {
+            EnumValueSpace valueSpace   = (EnumValueSpace) xStatus.ReturnValueSpace;
+            string         enumTypeName = GetEnumName(xStatus);
 
             await enumsWriter.WriteAsync($$"""
 
-                                           /// <summary>For use with <see cref="{{getInterfaceName(xStatus)}}.{{xStatus.nameWithoutBrackets.Last()}}{{$"({string.Join(", ", xStatus.arrayIndexParameters.Select(_ => "int"))})"}}" /></summary>
-                                           {{GENERATED_ATTRIBUTE}}
+                                           /// <summary>For use with <see cref="{{GetInterfaceName(xStatus)}}.{{xStatus.NameWithoutBrackets.Last()}}{{$"({string.Join(", ", xStatus.ArrayIndexParameters.Select(_ => "int"))})"}}" /></summary>
+                                           {{GeneratedAttribute}}
                                            public enum {{enumTypeName}} {
 
-                                           {{string.Join(",\r\n\r\n", valueSpace.possibleValues.Select(value => $"    /// <summary><para><c>{value.name}</c>{(value.description is not null ? ": " + value.description.NewLinesToParagraphs(true) : "")}</para></summary>\r\n    {xapiEnumValueToCsIdentifier(xStatus, null, value)}"))}}
+                                           {{string.Join(",\r\n\r\n", valueSpace.PossibleValues.Select(value => $"    /// <summary><para><c>{value.Name}</c>{(value.Description is not null ? ": " + value.Description.NewLinesToParagraphs(true) : "")}</para></summary>\r\n    {XapiEnumValueToCsIdentifier(xStatus, null, value)}"))}}
 
                                            }
 
                                            """);
 
-            enumsGenerated++;
+            _enumsGenerated++;
         }
 
-        foreach (DocXEvent xEvent in documentation.events) {
-            await writeEventParentEnum(xEvent);
-            enumsGenerated++;
+        foreach (DocXEvent xEvent in documentation.Events) {
+            await WriteEventParentEnum(xEvent);
+            _enumsGenerated++;
         }
 
-        async Task writeEventParentEnum(IEventParent eventParent) {
-            foreach (EventChild eventChild in eventParent.children) {
+        async Task WriteEventParentEnum(IEventParent eventParent) {
+            foreach (EventChild eventChild in eventParent.Children) {
                 if (eventChild is EnumChild enumChild) {
-                    string enumTypeName = getEnumName(enumChild.name);
+                    string enumTypeName = GetEnumName(enumChild.Name);
 
                     await enumsWriter.WriteAsync($$"""
-                                                   {{GENERATED_ATTRIBUTE}}
+                                                   {{GeneratedAttribute}}
                                                    public enum {{enumTypeName}} {
 
-                                                   {{string.Join(",\r\n\r\n", enumChild.possibleValues.Select(value => $"    /// <summary><para><c>{value.name}</c></para></summary>\r\n    {xapiEnumValueToCsIdentifier(null, null, value)}"))}}
+                                                   {{string.Join(",\r\n\r\n", enumChild.PossibleValues.Select(value => $"    /// <summary><para><c>{value.Name}</c></para></summary>\r\n    {XapiEnumValueToCsIdentifier(null, null, value)}"))}}
 
                                                    }
 
 
                                                    """);
                 } else if (eventChild is IEventParent subParent) {
-                    await writeEventParentEnum(subParent);
+                    await WriteEventParentEnum(subParent);
                 }
             }
         }
 
         await enumSerializerWriter.WriteAsync($$"""
-                                                {{FILE_HEADER}}
+                                                {{FileHeader}}
 
-                                                using {{NAMESPACE}}.API.Data;
+                                                using {{Namespace}}.API.Data;
                                                 using System.CodeDom.Compiler;
 
-                                                namespace {{NAMESPACE}}.API.Serialization;
+                                                namespace {{Namespace}}.API.Serialization;
 
-                                                {{GENERATED_ATTRIBUTE}}
+                                                {{GeneratedAttribute}}
                                                 internal static class EnumSerializer {
                                                 
                                                     private static readonly IDictionary<Type, (Func<Enum, string> serialize, Func<string, Enum> deserialize)> enumSerializers = new Dictionary<Type, (Func<Enum, string>, Func<string, Enum>)>();
@@ -113,17 +113,17 @@ public static partial class CsClientWriter {
 
                                                 """);
 
-        foreach (DocXConfiguration command in documentation.commands.Concat(documentation.configurations)) {
-            await enumSerializerWriter.WriteAsync(string.Join(null, command.parameters.Where(parameter => parameter.type == DataType.ENUM).Cast<EnumParameter>().Select(parameter => {
-                string enumTypeName = getEnumName(command, parameter.name);
+        foreach (DocXConfiguration command in documentation.Commands.Concat(documentation.Configurations)) {
+            await enumSerializerWriter.WriteAsync(string.Join(null, command.Parameters.Where(parameter => parameter.Type == DataType.Enum).Cast<EnumParameter>().Select(parameter => {
+                string enumTypeName = GetEnumName(command, parameter.Name);
 
-                IEnumerable<string> serializerSwitchArms = parameter.possibleValues
+                IEnumerable<string> serializerSwitchArms = parameter.PossibleValues
                     // .Where(value => xapiEnumValueToCsIdentifier(command, parameter, value) != value.name)
-                    .Select(value => $"{enumTypeName}.{xapiEnumValueToCsIdentifier(command, parameter, value)} => \"{value.name}\"")
+                    .Select(value => $"{enumTypeName}.{XapiEnumValueToCsIdentifier(command, parameter, value)} => \"{value.Name}\"")
                     .ToList();
 
                 IEnumerable<string> deserializerSwitchArms =
-                    parameter.possibleValues.Select(value => $"\"{value.name}\" => {enumTypeName}.{xapiEnumValueToCsIdentifier(command, parameter, value)}");
+                    parameter.PossibleValues.Select(value => $"\"{value.Name}\" => {enumTypeName}.{XapiEnumValueToCsIdentifier(command, parameter, value)}");
 
                 return $$"""
                                  enumSerializers.Add(typeof({{enumTypeName}}), (
@@ -140,12 +140,12 @@ public static partial class CsClientWriter {
             })));
         }
 
-        foreach (DocXStatus xStatus in documentation.statuses.Where(status => status.returnValueSpace.type == DataType.ENUM)) {
-            EnumValueSpace valueSpace   = (EnumValueSpace) xStatus.returnValueSpace;
-            string         enumTypeName = getEnumName(xStatus);
+        foreach (DocXStatus xStatus in documentation.Statuses.Where(status => status.ReturnValueSpace.Type == DataType.Enum)) {
+            EnumValueSpace valueSpace   = (EnumValueSpace) xStatus.ReturnValueSpace;
+            string         enumTypeName = GetEnumName(xStatus);
 
             IEnumerable<string> deserializerSwitchArms =
-                valueSpace.possibleValues.Select(value => $"\"{value.name}\" => {enumTypeName}.{xapiEnumValueToCsIdentifier(xStatus, null, value)}");
+                valueSpace.PossibleValues.Select(value => $"\"{value.Name}\" => {enumTypeName}.{XapiEnumValueToCsIdentifier(xStatus, null, value)}");
 
             await enumSerializerWriter.WriteAsync($$"""
                                                             enumSerializers.Add(typeof({{enumTypeName}}), (
@@ -158,16 +158,16 @@ public static partial class CsClientWriter {
                                                     """);
         }
 
-        foreach (DocXEvent xEvent in documentation.events) {
-            await writeEventSerializer(xEvent);
+        foreach (DocXEvent xEvent in documentation.Events) {
+            await WriteEventSerializer(xEvent);
         }
 
-        async Task writeEventSerializer(IEventParent eventParent) {
-            foreach (EventChild eventChild in eventParent.children) {
+        async Task WriteEventSerializer(IEventParent eventParent) {
+            foreach (EventChild eventChild in eventParent.Children) {
                 if (eventChild is EnumChild enumChild) {
-                    string enumTypeName = getEnumName(enumChild.name);
+                    string enumTypeName = GetEnumName(enumChild.Name);
                     IEnumerable<string> deserializerSwitchArms =
-                        enumChild.possibleValues.Select(value => $"\"{value.name}\" => {enumTypeName}.{xapiEnumValueToCsIdentifier(null, null, value)}");
+                        enumChild.PossibleValues.Select(value => $"\"{value.Name}\" => {enumTypeName}.{XapiEnumValueToCsIdentifier(null, null, value)}");
 
                     await enumSerializerWriter.WriteAsync($$"""
                                                                     enumSerializers.Add(typeof({{enumTypeName}}), (
@@ -179,21 +179,21 @@ public static partial class CsClientWriter {
 
                                                             """);
                 } else if (eventChild is IEventParent subParent) {
-                    await writeEventSerializer(subParent);
+                    await WriteEventSerializer(subParent);
                 }
             }
         }
 
         await enumSerializerWriter.WriteAsync("    }\r\n}");
 
-        static string xapiEnumValueToCsIdentifier(AbstractCommand? command, EnumParameter? parameter, EnumValue value) {
-            bool   isTimeZone = (command?.name.SequenceEqual(new[] { "xConfiguration", "Time", "Zone" }) ?? false) && parameter?.name == "Zone";
-            string name       = isTimeZone ? value.name : string.Join(null, value.name.Split('-').Select(s => s.ToUpperFirstLetter()));
+        static string XapiEnumValueToCsIdentifier(AbstractCommand? command, EnumParameter? parameter, EnumValue value) {
+            bool   isTimeZone = (command?.Name.SequenceEqual(new[] { "xConfiguration", "Time", "Zone" }) ?? false) && parameter?.Name == "Zone";
+            string name       = isTimeZone ? value.Name : string.Join(null, value.Name.Split('-').Select(s => s.ToUpperFirstLetter()));
             name = Regex.Replace(name, @"[^a-z0-9_]", match => match.Value switch {
                 "."                                               => "_",
                 "/"                                               => "_",      //"Ⳇ",
                 "+" when isTimeZone                               => "_Plus_", //ႵᏐǂߙƚϯᵻᵼ
-                "-" when isTimeZone && value.name.Contains("GMT") => "_Minus_",
+                "-" when isTimeZone && value.Name.Contains("GMT") => "_Minus_",
                 "-" when isTimeZone                               => "_",
                 _                                                 => ""
             }, RegexOptions.IgnoreCase).ToUpperFirstLetter();
@@ -201,8 +201,8 @@ public static partial class CsClientWriter {
         }
     }
 
-    private static string getEnumName(AbstractCommand command, string? parameterName) {
-        IEnumerable<string> segments = command.nameWithoutBrackets;
+    private static string GetEnumName(AbstractCommand command, string? parameterName) {
+        IEnumerable<string> segments = command.NameWithoutBrackets;
         if (parameterName != null) {
             segments = segments.Append(parameterName);
         }
@@ -210,15 +210,15 @@ public static partial class CsClientWriter {
         return string.Join(null, segments.DistinctConsecutive()).TrimStart('x');
     }
 
-    private static string getEnumName(DocXStatus command) {
-        return getEnumName(command, null);
+    private static string GetEnumName(DocXStatus command) {
+        return GetEnumName(command, null);
     }
 
-    private static string getEnumName(DocXConfiguration command, string parameterName) {
-        return getEnumName((AbstractCommand) command, parameterName);
+    private static string GetEnumName(DocXConfiguration command, string parameterName) {
+        return GetEnumName((AbstractCommand) command, parameterName);
     }
 
-    private static string getEnumName(ICollection<string> eventParameterName) {
+    private static string GetEnumName(ICollection<string> eventParameterName) {
         return string.Join(null, eventParameterName.DistinctConsecutive()).TrimStart('x');
     }
 

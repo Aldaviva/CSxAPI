@@ -8,39 +8,39 @@ namespace ApiExtractor.Generation;
 
 public static partial class CsClientWriter {
 
-    private static async Task writeCommands(ExtractedDocumentation documentation) {
-        await using StreamWriter icommandsWriter = openFileStream("ICommands.cs");
-        await using StreamWriter commandsWriter  = openFileStream("Commands.cs");
+    private static async Task WriteCommands(ExtractedDocumentation documentation) {
+        await using StreamWriter icommandsWriter = OpenFileStream("ICommands.cs");
+        await using StreamWriter commandsWriter  = OpenFileStream("Commands.cs");
 
-        IDictionary<string, ISet<InterfaceChild>> interfaceTree = generateInterfaceTree(documentation.commands);
+        IDictionary<string, ISet<INterfaceChild>> interfaceTree = GenerateInterfaceTree(documentation.Commands);
 
         await icommandsWriter.WriteAsync($"""
-                                          {FILE_HEADER}
+                                          {FileHeader}
 
-                                          using {NAMESPACE}.API.Data;
-                                          using {NAMESPACE}.API.Exceptions;
+                                          using {Namespace}.API.Data;
+                                          using {Namespace}.API.Exceptions;
                                           using System.CodeDom.Compiler;
 
-                                          namespace {NAMESPACE}.API;
+                                          namespace {Namespace}.API;
 
 
                                           """);
 
-        foreach (KeyValuePair<string, ISet<InterfaceChild>> interfaceNode in interfaceTree) {
-            await icommandsWriter.WriteAsync($"{GENERATED_ATTRIBUTE}\r\npublic interface {interfaceNode.Key} {{\r\n\r\n");
+        foreach (KeyValuePair<string, ISet<INterfaceChild>> interfaceNode in interfaceTree) {
+            await icommandsWriter.WriteAsync($"{GeneratedAttribute}\r\npublic interface {interfaceNode.Key} {{\r\n\r\n");
 
-            foreach (InterfaceChild interfaceChild in interfaceNode.Value) {
+            foreach (INterfaceChild interfaceChild in interfaceNode.Value) {
                 switch (interfaceChild) {
-                    case InterfaceMethod<DocXCommand> { command: var command }:
-                        (string signature, string returnType) methodSignature = generateMethodSignature(command, true);
+                    case InterfaceMethod<DocXCommand> { Command: var command }:
+                        (string signature, string returnType) methodSignature = GenerateMethodSignature(command, true);
                         await icommandsWriter.WriteAsync($"""
                                                               /// <summary>
-                                                              /// <para><c>{string.Join(' ', command.name)}</c></para>
-                                                              /// {command.description.NewLinesToParagraphs()}
+                                                              /// <para><c>{string.Join(' ', command.Name)}</c></para>
+                                                              /// {command.Description.NewLinesToParagraphs()}
                                                               /// </summary>
-                                                          {string.Join("\r\n", command.parameters.Select(param => $"    /// <param name=\"{getArgumentName(param, true)}\">{param.description.NewLinesToParagraphs()}</param>"))}
+                                                          {string.Join("\r\n", command.Parameters.Select(param => $"    /// <param name=\"{GetArgumentName(param, true)}\">{param.Description.NewLinesToParagraphs()}</param>"))}
                                                               /// <returns>A <see cref="Task&lt;T&gt;"/> that will complete asynchronously with the response from the device.</returns>
-                                                              /// <exception cref="CommandNotFoundException">The command is not available on the endpoint's software version or hardware</exception>{(command.parameters.Count == 0 ? "" : "\n    /// <exception cref=\"IllegalArgumentException\">One of the passed argument values is invalid</exception>")}
+                                                              /// <exception cref="CommandNotFoundException">The command is not available on the endpoint's software version or hardware</exception>{(command.Parameters.Count == 0 ? "" : "\n    /// <exception cref=\"IllegalArgumentException\">One of the passed argument values is invalid</exception>")}
                                                               {methodSignature.signature};
 
 
@@ -48,7 +48,7 @@ public static partial class CsClientWriter {
                         break;
 
                     case Subinterface<DocXCommand> s:
-                        await icommandsWriter.WriteAsync($"    {s.interfaceName} {s.getterName} {{ get; }}\r\n\r\n");
+                        await icommandsWriter.WriteAsync($"    {s.InterfaceName} {s.GetterName} {{ get; }}\r\n\r\n");
                         break;
                 }
             }
@@ -57,16 +57,16 @@ public static partial class CsClientWriter {
         }
 
         await commandsWriter.WriteAsync($$"""
-                                          {{FILE_HEADER}}
+                                          {{FileHeader}}
 
-                                          using {{NAMESPACE}}.API.Data;
-                                          using {{NAMESPACE}}.API.Serialization;
-                                          using {{NAMESPACE}}.Transport;
+                                          using {{Namespace}}.API.Data;
+                                          using {{Namespace}}.API.Serialization;
+                                          using {{Namespace}}.Transport;
                                           using System.CodeDom.Compiler;
 
-                                          namespace {{NAMESPACE}}.API;
+                                          namespace {{Namespace}}.API;
 
-                                          {{GENERATED_ATTRIBUTE}}
+                                          {{GeneratedAttribute}}
                                           internal class Commands: {{string.Join(", ", interfaceTree.Keys)}} {
                                           
                                               private readonly IXapiTransport transport;
@@ -77,42 +77,42 @@ public static partial class CsClientWriter {
 
                                           """);
 
-        foreach (DocXCommand command in documentation.commands) {
-            string path = $"new[] {{ {string.Join(", ", command.name.Select(s => $"\"{s}\""))} }}";
-            string parameters = command.parameters.Any()
-                ? $"new Dictionary<string, object?> {{ {string.Join(", ", command.parameters.Select(parameter => $"{{ \"{parameter.name}\", {(parameter.type == DataType.ENUM ? $"ValueSerializer.Serialize({getArgumentName(parameter)})" : getArgumentName(parameter))} }}"))} }}"
+        foreach (DocXCommand command in documentation.Commands) {
+            string path = $"new[] {{ {string.Join(", ", command.Name.Select(s => $"\"{s}\""))} }}";
+            string parameters = command.Parameters.Any()
+                ? $"new Dictionary<string, object?> {{ {string.Join(", ", command.Parameters.Select(parameter => $"{{ \"{parameter.Name}\", {(parameter.Type == DataType.Enum ? $"ValueSerializer.Serialize({GetArgumentName(parameter)})" : GetArgumentName(parameter))} }}"))} }}"
                 : "null";
 
             await commandsWriter.WriteAsync($$"""
                                                   /// <inheritdoc />
-                                                  {{generateMethodSignature(command, false).signature}} {
+                                                  {{GenerateMethodSignature(command, false).signature}} {
                                                       return await this.transport.CallMethod({{path}}, {{parameters}}).ConfigureAwait(false);
                                                   }
 
 
                                               """);
 
-            methodsGenerated++;
-            apiCommandsGenerated++;
+            _methodsGenerated++;
+            _apiCommandsGenerated++;
         }
 
-        foreach (KeyValuePair<string, ISet<InterfaceChild>> interfaceNode in interfaceTree) {
+        foreach (KeyValuePair<string, ISet<INterfaceChild>> interfaceNode in interfaceTree) {
             foreach (Subinterface<DocXCommand> subinterface in interfaceNode.Value.OfType<Subinterface<DocXCommand>>()) {
-                await commandsWriter.WriteAsync($"    {subinterface.interfaceName} {interfaceNode.Key}.{subinterface.getterName} => this;\r\n");
+                await commandsWriter.WriteAsync($"    {subinterface.InterfaceName} {interfaceNode.Key}.{subinterface.GetterName} => this;\r\n");
             }
         }
 
         await commandsWriter.WriteAsync("}");
     }
 
-    private static (string signature, string returnType) generateMethodSignature(DocXCommand command, bool isInterfaceMethod) {
-        const string RETURN_TYPE = "IDictionary<string, object>";
+    private static (string signature, string returnType) GenerateMethodSignature(DocXCommand command, bool isInterfaceMethod) {
+        const string returnType = "IDictionary<string, object>";
         return
-            ($"{(isInterfaceMethod ? "" : "async ")}Task<{RETURN_TYPE}> {(isInterfaceMethod ? "" : getInterfaceName(command) + '.')}{command.nameWithoutBrackets.Last()}({string.Join(", ", command.parameters.OrderByDescending(parameter => parameter.required).Select(parameter => $"{parameter.type switch {
-                DataType.INTEGER => "int",
-                DataType.STRING  => "string",
-                DataType.ENUM    => getEnumName(command, parameter.name)
-            }}{(parameter.required ? "" : "?")} {getArgumentName(parameter)}{(parameter.required || !isInterfaceMethod ? "" : " = null")}"))})", RETURN_TYPE);
+            ($"{(isInterfaceMethod ? "" : "async ")}Task<{returnType}> {(isInterfaceMethod ? "" : GetInterfaceName(command) + '.')}{command.NameWithoutBrackets.Last()}({string.Join(", ", command.Parameters.OrderByDescending(parameter => parameter.Required).Select(parameter => $"{parameter.Type switch {
+                DataType.Integer => "int",
+                DataType.String  => "string",
+                DataType.Enum    => GetEnumName(command, parameter.Name)
+            }}{(parameter.Required ? "" : "?")} {GetArgumentName(parameter)}{(parameter.Required || !isInterfaceMethod ? "" : " = null")}"))})", returnType);
     }
 
 }

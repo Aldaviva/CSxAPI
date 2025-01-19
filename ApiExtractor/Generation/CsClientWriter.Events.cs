@@ -8,44 +8,44 @@ namespace ApiExtractor.Generation;
 
 public static partial class CsClientWriter {
 
-    private static async Task writeEvents(ExtractedDocumentation documentation) {
-        await using StreamWriter eventWriter             = openFileStream("Events.cs");
-        await using StreamWriter ieventWriter            = openFileStream("IEvents.cs");
-        await using StreamWriter eventDataWriter         = openFileStream("Data\\Events.cs");
-        await using StreamWriter eventDeserializerWriter = openFileStream("Serialization\\EventDeserializer.cs");
+    private static async Task WriteEvents(ExtractedDocumentation documentation) {
+        await using StreamWriter eventWriter             = OpenFileStream("Events.cs");
+        await using StreamWriter ieventWriter            = OpenFileStream("IEvents.cs");
+        await using StreamWriter eventDataWriter         = OpenFileStream("Data\\Events.cs");
+        await using StreamWriter eventDeserializerWriter = OpenFileStream("Serialization\\EventDeserializer.cs");
 
-        IDictionary<string, ISet<InterfaceChild>> interfaceTree = generateInterfaceTree(documentation.events);
+        IDictionary<string, ISet<INterfaceChild>> interfaceTree = GenerateInterfaceTree(documentation.Events);
 
         await ieventWriter.WriteAsync($"""
-                                       {FILE_HEADER}
+                                       {FileHeader}
 
-                                       using {NAMESPACE}.API.Data;
+                                       using {Namespace}.API.Data;
                                        using System.CodeDom.Compiler;
 
-                                       namespace {NAMESPACE}.API;
+                                       namespace {Namespace}.API;
 
 
                                        """);
 
-        foreach (KeyValuePair<string, ISet<InterfaceChild>> interfaceNode in interfaceTree) {
-            await ieventWriter.WriteAsync($"{GENERATED_ATTRIBUTE}\r\npublic interface {interfaceNode.Key} {{\r\n\r\n");
+        foreach (KeyValuePair<string, ISet<INterfaceChild>> interfaceNode in interfaceTree) {
+            await ieventWriter.WriteAsync($"{GeneratedAttribute}\r\npublic interface {interfaceNode.Key} {{\r\n\r\n");
 
-            foreach (InterfaceChild interfaceChild in interfaceNode.Value) {
+            foreach (INterfaceChild interfaceChild in interfaceNode.Value) {
                 switch (interfaceChild) {
-                    case InterfaceMethod<DocXEvent> { command: var xEvent }:
+                    case InterfaceMethod<DocXEvent> { Command: var xEvent }:
                         await ieventWriter.WriteAsync($"""
                                                            /// <summary>
-                                                           /// <para><c>{string.Join(' ', xEvent.name)}</c></para>
+                                                           /// <para><c>{string.Join(' ', xEvent.Name)}</c></para>
                                                            /// <para>Fired when the event is received from the device.</para>
                                                            /// </summary>
-                                                           {generateEventSignature(xEvent, true).signature};
+                                                           {GenerateEventSignature(xEvent, true).signature};
 
 
                                                        """);
                         break;
 
                     case Subinterface<DocXEvent> s:
-                        await ieventWriter.WriteAsync($"    {s.interfaceName} {s.getterName} {{ get; }}\r\n\r\n");
+                        await ieventWriter.WriteAsync($"    {s.InterfaceName} {s.GetterName} {{ get; }}\r\n\r\n");
                         break;
                 }
             }
@@ -54,26 +54,26 @@ public static partial class CsClientWriter {
         }
 
         await eventDataWriter.WriteAsync($"""
-                                          {FILE_HEADER}
+                                          {FileHeader}
 
                                           using System.CodeDom.Compiler;
 
-                                          namespace {NAMESPACE}.API.Data;
+                                          namespace {Namespace}.API.Data;
 
 
                                           """);
 
         await eventDeserializerWriter.WriteAsync($$"""
-                                                   {{FILE_HEADER}}
+                                                   {{FileHeader}}
 
-                                                   using {{NAMESPACE}}.API.Data;
+                                                   using {{Namespace}}.API.Data;
                                                    using Newtonsoft.Json.Linq;
                                                    using System.CodeDom.Compiler;
                                                    using System.Collections.ObjectModel;
 
-                                                   namespace {{NAMESPACE}}.API.Serialization;
+                                                   namespace {{Namespace}}.API.Serialization;
 
-                                                   {{GENERATED_ATTRIBUTE}}
+                                                   {{GeneratedAttribute}}
                                                    internal static class EventDeserializer {
                                                        
                                                        private static readonly IDictionary<Type, Func<JToken, object>> eventDeserializers = new Dictionary<Type, Func<JToken, object>>();
@@ -84,40 +84,40 @@ public static partial class CsClientWriter {
 
                                                    """);
 
-        Stack<IEventParent> eventClassesToGenerate = new(documentation.events.Where(xEvent => xEvent.children.Any()));
+        Stack<IEventParent> eventClassesToGenerate = new(documentation.Events.Where(xEvent => xEvent.Children.Any()));
 
         while (eventClassesToGenerate.TryPop(out IEventParent? eventClassToGenerate)) {
-            await writeEventDataClass(eventClassToGenerate);
-            await writeEventDeserializer(eventClassToGenerate);
+            await WriteEventDataClass(eventClassToGenerate);
+            await WriteEventDeserializer(eventClassToGenerate);
         }
 
         await eventDeserializerWriter.WriteAsync("    }\r\n\r\n}");
 
-        async Task writeEventDataClass(IEventParent eventParent) {
-            await eventDataWriter.WriteAsync($"{GENERATED_ATTRIBUTE}\r\npublic class {generateEventDataClassName(eventParent)} {{\r\n\r\n");
+        async Task WriteEventDataClass(IEventParent eventParent) {
+            await eventDataWriter.WriteAsync($"{GeneratedAttribute}\r\npublic class {GenerateEventDataClassName(eventParent)} {{\r\n\r\n");
 
-            foreach (EventChild eventChild in eventParent.children) {
+            foreach (EventChild eventChild in eventParent.Children) {
                 switch (eventChild) {
                     case ValueChild valueChild: {
-                        string childType = valueChild.type switch {
-                            DataType.INTEGER => "int",
-                            DataType.STRING  => "string",
-                            DataType.ENUM    => getEnumName(valueChild.name)
+                        string childType = valueChild.Type switch {
+                            DataType.Integer => "int",
+                            DataType.String  => "string",
+                            DataType.Enum    => GetEnumName(valueChild.Name)
                         };
                         await eventDataWriter.WriteAsync(
-                            $"    public {childType}{(valueChild.required ? "" : "?")} {xapiEventKeyToCsIdentifier(valueChild.name.Last())} {{ get; init; }}{(valueChild is { required: true, type: DataType.STRING } ? " = null!;" : "")}\r\n");
+                            $"    public {childType}{(valueChild.Required ? "" : "?")} {XapiEventKeyToCsIdentifier(valueChild.Name.Last())} {{ get; init; }}{(valueChild is { Required: true, Type: DataType.String } ? " = null!;" : "")}\r\n");
                         break;
                     }
                     case ListContainer listChild: {
-                        string childType = generateEventDataClassName(listChild);
-                        await eventDataWriter.WriteAsync($"    public IDictionary<int, {childType}> {listChild.name.Last()} {{ get; init; }} = null!;\r\n");
+                        string childType = GenerateEventDataClassName(listChild);
+                        await eventDataWriter.WriteAsync($"    public IDictionary<int, {childType}> {listChild.Name.Last()} {{ get; init; }} = null!;\r\n");
                         eventClassesToGenerate.Push(listChild);
                         break;
                     }
                     case ObjectContainer objectContainer: {
-                        string childType = generateEventDataClassName(objectContainer);
+                        string childType = GenerateEventDataClassName(objectContainer);
                         await eventDataWriter.WriteAsync(
-                            $"    public {childType}{(objectContainer.required ? "" : "?")} {objectContainer.name.Last()} {{ get; init; }}{(objectContainer.required ? " = null!;" : "")}\r\n");
+                            $"    public {childType}{(objectContainer.Required ? "" : "?")} {objectContainer.Name.Last()} {{ get; init; }}{(objectContainer.Required ? " = null!;" : "")}\r\n");
                         eventClassesToGenerate.Push(objectContainer);
                         break;
                     }
@@ -127,26 +127,26 @@ public static partial class CsClientWriter {
             await eventDataWriter.WriteAsync("\r\n}\r\n\r\n");
         }
 
-        async Task writeEventDeserializer(IEventParent eventParent) {
-            string typeName = generateEventDataClassName(eventParent);
+        async Task WriteEventDeserializer(IEventParent eventParent) {
+            string typeName = GenerateEventDataClassName(eventParent);
 
             int serializedParameterCounter = 0;
             await eventDeserializerWriter.WriteAsync($$"""
                                                                eventDeserializers.Add(typeof({{typeName}}), json => new {{typeName}} {
-                                                                   {{string.Join(",\r\n            ", eventParent.children.Select(child => {
-                                                                       string lastChildName = child.name.Last();
-                                                                       string childClass    = generateEventDataClassName(child);
-                                                                       return xapiEventKeyToCsIdentifier(lastChildName) + " = " + child switch {
-                                                                           IntChild { implicitAnonymousSingleton: true } => "json.Value<int>()",
-                                                                           IntChild { required: true } => $"json.Value<int>(\"{lastChildName}\")",
-                                                                           IntChild { required: false } => $"json.Value<int?>(\"{lastChildName}\")",
-                                                                           StringChild { required: true } => $"json.Value<string>(\"{lastChildName}\")!",
-                                                                           StringChild { required: false } => $"json.Value<string>(\"{lastChildName}\")",
-                                                                           EnumChild { required: true } => $"EnumSerializer.Deserialize<{getEnumName(child.name)}>(json.Value<string>(\"{lastChildName}\")!)",
-                                                                           EnumChild { required: false } => $"json.Value<string>(\"{lastChildName}\") is {{ }} serialized{++serializedParameterCounter} ? EnumSerializer.Deserialize<{getEnumName(child.name)}>(serialized{serializedParameterCounter}) : null",
+                                                                   {{string.Join(",\r\n            ", eventParent.Children.Select(child => {
+                                                                       string lastChildName = child.Name.Last();
+                                                                       string childClass    = GenerateEventDataClassName(child);
+                                                                       return XapiEventKeyToCsIdentifier(lastChildName) + " = " + child switch {
+                                                                           IntChild { ImplicitAnonymousSingleton: true } => "json.Value<int>()",
+                                                                           IntChild { Required: true } => $"json.Value<int>(\"{lastChildName}\")",
+                                                                           IntChild { Required: false } => $"json.Value<int?>(\"{lastChildName}\")",
+                                                                           StringChild { Required: true } => $"json.Value<string>(\"{lastChildName}\")!",
+                                                                           StringChild { Required: false } => $"json.Value<string>(\"{lastChildName}\")",
+                                                                           EnumChild { Required: true } => $"EnumSerializer.Deserialize<{GetEnumName(child.Name)}>(json.Value<string>(\"{lastChildName}\")!)",
+                                                                           EnumChild { Required: false } => $"json.Value<string>(\"{lastChildName}\") is {{ }} serialized{++serializedParameterCounter} ? EnumSerializer.Deserialize<{GetEnumName(child.Name)}>(serialized{serializedParameterCounter}) : null",
                                                                            ListContainer => $"(IDictionary<int, {childClass}>?) json[\"{lastChildName}\"]?.Children().ToDictionary(innerObject => innerObject.Value<int>(\"id\"), innerObject => Deserialize<{childClass}>((JObject) innerObject)) ?? new ReadOnlyDictionary<int, {childClass}>(new Dictionary<int, {childClass}>(0))",
-                                                                           ObjectContainer { required: true } => $"Deserialize<{childClass}>((JObject) json[\"{lastChildName}\"]!)",
-                                                                           ObjectContainer { required: false } => $"json[\"{lastChildName}\"] is JObject serialized{++serializedParameterCounter} ? Deserialize<{childClass}>(serialized{serializedParameterCounter}) : null"
+                                                                           ObjectContainer { Required: true } => $"Deserialize<{childClass}>((JObject) json[\"{lastChildName}\"]!)",
+                                                                           ObjectContainer { Required: false } => $"json[\"{lastChildName}\"] is JObject serialized{++serializedParameterCounter} ? Deserialize<{childClass}>(serialized{serializedParameterCounter}) : null"
                                                                        };
                                                                    }))}}
                                                                });
@@ -156,15 +156,15 @@ public static partial class CsClientWriter {
         }
 
         await eventWriter.WriteAsync($$"""
-                                       {{FILE_HEADER}}
+                                       {{FileHeader}}
 
-                                       using {{NAMESPACE}}.API.Data;
-                                       using {{NAMESPACE}}.API.Serialization;
+                                       using {{Namespace}}.API.Data;
+                                       using {{Namespace}}.API.Serialization;
                                        using System.CodeDom.Compiler;
 
-                                       namespace {{NAMESPACE}}.API;
+                                       namespace {{Namespace}}.API;
 
-                                       {{GENERATED_ATTRIBUTE}}
+                                       {{GeneratedAttribute}}
                                        internal class Events: {{string.Join(", ", interfaceTree.Keys)}} {
                                        
                                            private readonly IFeedbackSubscriber feedbackSubscriber;
@@ -176,12 +176,12 @@ public static partial class CsClientWriter {
                                        
                                        """);
 
-        foreach (DocXEvent xEvent in documentation.events) {
-            (string eventSignature, string? returnType) = generateEventSignature(xEvent, false);
+        foreach (DocXEvent xEvent in documentation.Events) {
+            (string eventSignature, string? returnType) = GenerateEventSignature(xEvent, false);
             await eventWriter.WriteAsync($$"""
                                                /// <inheritdoc />
                                                {{eventSignature}} {
-                                                   add => feedbackSubscriber.Subscribe(new[] { {{string.Join(", ", xEvent.name.Select(s => $"\"{s}\""))}} }, value{{(returnType != null ? $", ValueSerializer.DeserializeEvent<{returnType}>" : "")}}).Wait(feedbackSubscriber.Timeout);
+                                                   add => feedbackSubscriber.Subscribe(new[] { {{string.Join(", ", xEvent.Name.Select(s => $"\"{s}\""))}} }, value{{(returnType != null ? $", ValueSerializer.DeserializeEvent<{returnType}>" : "")}}).Wait(feedbackSubscriber.Timeout);
                                                    remove => feedbackSubscriber.Unsubscribe(value).Wait(feedbackSubscriber.Timeout);
                                                }
 
@@ -189,29 +189,29 @@ public static partial class CsClientWriter {
                                            """
             );
 
-            eventsGenerated++;
+            _eventsGenerated++;
 
-            apiCommandsGenerated++;
+            _apiCommandsGenerated++;
         }
 
-        foreach (KeyValuePair<string, ISet<InterfaceChild>> interfaceNode in interfaceTree) {
+        foreach (KeyValuePair<string, ISet<INterfaceChild>> interfaceNode in interfaceTree) {
             foreach (Subinterface<DocXEvent> subinterface in interfaceNode.Value.OfType<Subinterface<DocXEvent>>()) {
-                await eventWriter.WriteAsync($"    {subinterface.interfaceName} {interfaceNode.Key}.{subinterface.getterName} => this;\r\n");
+                await eventWriter.WriteAsync($"    {subinterface.InterfaceName} {interfaceNode.Key}.{subinterface.GetterName} => this;\r\n");
             }
         }
 
         await eventWriter.WriteAsync("}");
     }
 
-    private static (string signature, string? returnType) generateEventSignature(DocXEvent xEvent, bool isInterfaceEvent) {
-        string? payloadType = xEvent.children.Any() ? generateEventDataClassName(xEvent) : null;
-        return ($"event FeedbackCallback{(payloadType != null ? $"<{payloadType}>" : "")} {(isInterfaceEvent ? "" : getInterfaceName(xEvent) + '.')}{xEvent.nameWithoutBrackets.Last()}", payloadType);
+    private static (string signature, string? returnType) GenerateEventSignature(DocXEvent xEvent, bool isInterfaceEvent) {
+        string? payloadType = xEvent.Children.Any() ? GenerateEventDataClassName(xEvent) : null;
+        return ($"event FeedbackCallback{(payloadType != null ? $"<{payloadType}>" : "")} {(isInterfaceEvent ? "" : GetInterfaceName(xEvent) + '.')}{xEvent.NameWithoutBrackets.Last()}", payloadType);
     }
 
-    private static string generateEventDataClassName(IPathNamed c) {
-        return string.Join(null, c.name.Skip(1).Append(c.name[0][1..]).Append("Data"));
+    private static string GenerateEventDataClassName(IPathNamed c) {
+        return string.Join(null, c.Name.Skip(1).Append(c.Name[0][1..]).Append("Data"));
     }
 
-    private static string xapiEventKeyToCsIdentifier(string key) => key.Replace('.', '_');
+    private static string XapiEventKeyToCsIdentifier(string key) => key.Replace('.', '_');
 
 }

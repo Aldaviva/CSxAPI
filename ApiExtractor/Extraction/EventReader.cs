@@ -7,88 +7,88 @@ namespace ApiExtractor.Extraction;
 
 public class EventReader {
 
-    private readonly ExtractedDocumentation docs;
+    private readonly ExtractedDocumentation _docs;
 
     public EventReader(ExtractedDocumentation docs) {
-        this.docs = docs;
+        _docs = docs;
     }
 
-    public void parseEventXml(string xmlFilename) {
+    public void ParseEventXml(string xmlFilename) {
         XDocument doc = XDocument.Load(xmlFilename);
 
         foreach (XElement secondLevelElements in doc.Root!.Elements()) {
-            visit(secondLevelElements, new[] { "xEvent" });
+            Visit(secondLevelElements, new[] { "xEvent" });
         }
 
-        Console.WriteLine($"Parsed {docs.events.Count:N0} xEvents from XML");
+        Console.WriteLine($"Parsed {_docs.Events.Count:N0} xEvents from XML");
     }
 
-    private void visit(XElement el, IList<string> path) {
+    private void Visit(XElement el, IList<string> path) {
         path = path.Append(el.Name.LocalName).ToList();
 
-        if (attributeEquals(el, "event", "True")) {
+        if (AttributeEquals(el, "event", "True")) {
             DocXEvent xEvent = new() {
-                name             = path,
-                access           = EventAccessParser.parse(el.Attribute("access")!.Value),
-                requiresUserRole = (el.Attribute("role")?.Value.Split(";").Select(rawRole => Enum.Parse<UserRole>(rawRole, true)) ?? Enumerable.Empty<UserRole>()).ToHashSet(),
+                Name             = path,
+                Access           = EventAccessParser.Parse(el.Attribute("access")!.Value),
+                RequiresUserRole = (el.Attribute("role")?.Value.Split(";").Select(rawRole => Enum.Parse<UserRole>(rawRole, true)) ?? Enumerable.Empty<UserRole>()).ToHashSet(),
             };
 
-            if (xEvent.access == EventAccess.PUBLIC_API) {
-                docs.events.Add(xEvent);
+            if (xEvent.Access == EventAccess.PublicAPI) {
+                _docs.Events.Add(xEvent);
 
                 foreach (XElement childEl in el.Elements()) {
-                    visit(childEl, xEvent);
+                    Visit(childEl, xEvent);
                 }
             }
         } else {
             foreach (XElement childEl in el.Elements()) {
-                visit(childEl, path);
+                Visit(childEl, path);
             }
         }
     }
 
-    private static void visit(XElement el, IEventParent parent) {
-        IList<string> name     = parent.name.Append(el.Attribute("className")?.Value ?? el.Name.LocalName).ToList();
-        bool          required = !attributeEquals(el, "optional", "True");
+    private static void Visit(XElement el, IEventParent parent) {
+        IList<string> name     = parent.Name.Append(el.Attribute("className")?.Value ?? el.Name.LocalName).ToList();
+        bool          required = !AttributeEquals(el, "optional", "True");
 
-        if (attributeEquals(el, "type", "literal") && el.HasElements) {
-            parent.children.Add(new EnumChild {
-                name           = name,
-                required       = required,
-                possibleValues = el.Elements("Value").Select(valueEl => new EnumValue(valueEl.Value)).ToHashSet()
+        if (AttributeEquals(el, "type", "literal") && el.HasElements) {
+            parent.Children.Add(new EnumChild {
+                Name           = name,
+                Required       = required,
+                PossibleValues = el.Elements("Value").Select(valueEl => new EnumValue(valueEl.Value)).ToHashSet()
             });
-        } else if (attributeEquals(el, "type", "string") || (attributeEquals(el, "type", "literal") && !el.HasElements)) {
-            parent.children.Add(new StringChild {
-                name     = name,
-                required = required
+        } else if (AttributeEquals(el, "type", "string") || (AttributeEquals(el, "type", "literal") && !el.HasElements)) {
+            parent.Children.Add(new StringChild {
+                Name     = name,
+                Required = required
             });
-        } else if (attributeEquals(el, "type", "int")) {
-            parent.children.Add(new IntChild {
-                name                       = name,
-                required                   = required,
-                implicitAnonymousSingleton = attributeEquals(el, "onlyTextNode", "true")
+        } else if (AttributeEquals(el, "type", "int")) {
+            parent.Children.Add(new IntChild {
+                Name                       = name,
+                Required                   = required,
+                ImplicitAnonymousSingleton = AttributeEquals(el, "onlyTextNode", "true")
             });
-        } else if (attributeEquals(el, "multiple", "True")) {
-            ListContainer listContainer = new() { name = name };
-            parent.children.Add(listContainer);
+        } else if (AttributeEquals(el, "multiple", "True")) {
+            ListContainer listContainer = new() { Name = name };
+            parent.Children.Add(listContainer);
 
             foreach (XElement childEl in el.Elements()) {
-                visit(childEl, listContainer);
+                Visit(childEl, listContainer);
             }
         } else /*if (attributeEquals(el, "basenode", "True"))*/ {
             ObjectContainer objectContainer = new() {
-                name     = name,
-                required = required
+                Name     = name,
+                Required = required
             };
-            parent.children.Add(objectContainer);
+            parent.Children.Add(objectContainer);
 
             foreach (XElement childEl in el.Elements()) {
-                visit(childEl, objectContainer);
+                Visit(childEl, objectContainer);
             }
         }
     }
 
-    private static bool attributeEquals(XElement el, string attributeName, string? comparisonValue) {
+    private static bool AttributeEquals(XElement el, string attributeName, string? comparisonValue) {
         return string.Equals(el.Attribute(attributeName)?.Value, comparisonValue, StringComparison.InvariantCultureIgnoreCase);
     }
 
