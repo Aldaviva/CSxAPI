@@ -18,6 +18,8 @@
         <FileVersion>$(Version)</FileVersion> <!-- File version -->
         <NoWarn>CS8524</NoWarn>
         <ApplicationIcon>cisco.ico</ApplicationIcon>
+        <PublishSingleFile>true</PublishSingleFile>
+        <SelfContained>false</SelfContained>
     </PropertyGroup>
 
     <ItemGroup>

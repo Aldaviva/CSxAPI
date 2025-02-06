@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IssueCreator", "IssueCreato
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj", "{8311C2AA-BCC7-48F0-BB21-741AA2B3E8DA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpdateManifestArchiver", "UpdateManifestArchiver\UpdateManifestArchiver.csproj", "{AE36404D-24A0-4C31-9F20-E7CD256FFBA9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{8311C2AA-BCC7-48F0-BB21-741AA2B3E8DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8311C2AA-BCC7-48F0-BB21-741AA2B3E8DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8311C2AA-BCC7-48F0-BB21-741AA2B3E8DA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE36404D-24A0-4C31-9F20-E7CD256FFBA9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE36404D-24A0-4C31-9F20-E7CD256FFBA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE36404D-24A0-4C31-9F20-E7CD256FFBA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE36404D-24A0-4C31-9F20-E7CD256FFBA9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

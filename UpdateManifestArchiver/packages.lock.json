@@ -2,11 +2,17 @@
   "version": 1,
   "dependencies": {
     "net8.0": {
-      "AngleSharp": {
+      "Bom.Squad": {
         "type": "Direct",
-        "requested": "[1.2.0, )",
-        "resolved": "1.2.0",
-        "contentHash": "uF/PzSCVcb\u002Bb2nqVvHZbOqexoJ9R6QLjonugPf0PQl\u002B0h7YKaFZeXyspctbHe5HGlx7/Iuk5BErtk\u002Bt63ac/ZA=="
+        "requested": "[0.3.0, )",
+        "resolved": "0.3.0",
+        "contentHash": "XzhQ6cpYMDACcRosaHBO8P8SGAJ2GBC/9Hcb0WUUe9UTUCttr3PrIWf7r\u002Bbg6sDCu3/gPWPgh8lfHMTXAi/v3A=="
+      },
+      "DataSizeUnits": {
+        "type": "Direct",
+        "requested": "[3.0.0-beta1, )",
+        "resolved": "3.0.0-beta1",
+        "contentHash": "Yxqk4kiw52biTvSzyV8YAGcixe4F30JdPzisihLSuapgB0ON6m0ONnA\u002Bk5LwwMag3kapYokivsoLGI8P4JUdaA=="
       },
       "McMaster.Extensions.CommandLineUtils": {
         "type": "Direct",
@@ -17,17 +23,16 @@
           "System.ComponentModel.Annotations": "5.0.0"
         }
       },
-      "Octokit": {
-        "type": "Direct",
-        "requested": "[14.0.0, )",
-        "resolved": "14.0.0",
-        "contentHash": "jGOuTH1l\u002BTCpJH\u002BfwYOp7USzHDuGfN1jKbLz3J2COwyn\u002BwL08eynvpnM6rY2qkzIEXum3PN2p2QkP3BW/p9Qcw=="
-      },
       "System.ComponentModel.Annotations": {
         "type": "Transitive",
         "resolved": "5.0.0",
         "contentHash": "dMkqfy2el8A8/I76n2Hi1oBFEbG1SfxD2l5nhwXV3XjlnOmwxJlQbYpJH4W51odnU9sARCSAgv7S3CyAFMkpYg=="
       }
-    }
+    },
+    "net8.0/linux-arm": {},
+    "net8.0/linux-arm64": {},
+    "net8.0/linux-x64": {},
+    "net8.0/win-arm64": {},
+    "net8.0/win-x64": {}
   }
 }
