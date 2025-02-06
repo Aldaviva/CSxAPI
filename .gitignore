@@ -32,3 +32,4 @@ _ReSharper*/
 packages/
 /CSxAPI/API/Generated/**/*.cs
 /ApiExtractor/Documentation/event*
+/UpdateManifestArchiver/WebexApi.cs

@@ -1,7 +1,7 @@
-CSxAPI
+﻿CSxAPI
 ===
 
-[![NuGet](https://img.shields.io/nuget/v/CSxAPI?logo=nuget)](https://www.nuget.org/packages/csxapi) [![target version](https://img.shields.io/badge/target%20version-RoomOS%2011.20-%3B?logo=cisco&logoColor=white)](https://www.cisco.com/c/en/us/support/collaboration-endpoints/spark-room-kit-series/products-command-reference-list.html)
+[![NuGet](https://img.shields.io/nuget/v/CSxAPI?logo=nuget)](https://www.nuget.org/packages/csxapi) [![target version](https://img.shields.io/badge/target%20version-RoomOS%2011.24-%3B?logo=cisco&logoColor=white&color=informational)](https://www.cisco.com/c/en/us/support/collaboration-endpoints/spark-room-kit-series/products-command-reference-list.html)
 
 CSxAPI is a strongly-typed API client library for **Cisco xAPI**. It is similar to the official [jsxapi](https://www.npmjs.com/package/jsxapi) implementation, but for .NET instead of JavaScript. xAPI is an API exposed by [Cisco video conferencing devices](https://www.cisco.com/c/en/us/products/collaboration-endpoints/collaboration-room-endpoints/index.html), also known as Collaboration Endpoints, Webex Rooms, Cisco devices, room systems, TelePresence, and codecs.
 

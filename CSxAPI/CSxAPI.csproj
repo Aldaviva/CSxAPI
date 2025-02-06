@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
-        <Version>11.20.0.0</Version>
+        <Version>11.24.0.0</Version>
         <Authors>Ben Hutchison</Authors>
         <Copyright>© 2025 $(Authors)</Copyright>
         <Company>$(Authors)</Company>
@@ -34,12 +34,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="StreamJsonRpc" Version="2.20.20" />
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+        <PackageReference Include="StreamJsonRpc" Version="2.20.20" />
     </ItemGroup>
 
     <ItemGroup>
-        <!-- <EditorConfigFiles Remove="API\Generated\.editorconfig" /> -->
         <None Include="icon.jpg" Pack="true" PackagePath="\" />
         <None Include="..\Readme.md" Pack="true" PackagePath="\" />
     </ItemGroup>
