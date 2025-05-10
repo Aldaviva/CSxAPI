@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Unfucked;
+using Unfucked.HTTP;
 using UpdateManifestArchiver;
 
 BomSquad.DefuseUtf8Bom();
@@ -25,13 +26,13 @@ app.OnExecute(() => exit = false);
 app.Execute(args);
 if (exit) return 1;
 
-using HttpClient httpClient = new();
+using UnfuckedHttpClient httpClient = new();
 
 bool isWindows = Environment.OSVersion.Platform == PlatformID.Win32NT;
 
 try {
     Console.WriteLine($"Downloading update manifest from Webex API ({WebexApi.GetUpdateManifest.AbsoluteUri})");
-    var        manifestBytes = new ReadOnlyMemory<byte>(await httpClient.GetByteArrayAsync(WebexApi.GetUpdateManifest, cts.Token));
+    var        manifestBytes = await httpClient.Target(WebexApi.GetUpdateManifest).Get<ReadOnlyMemory<byte>>(cts.Token);
     JsonObject manifestJson  = JsonSerializer.Deserialize<JsonObject>(manifestBytes.Span)!;
 
     if (manifestJson["manifest"]?["version"]?.GetValue<string>() is not { } versionText) {
@@ -44,13 +45,13 @@ try {
         return 1;
     }
 
-    Version  version     = Version.Parse(versionMatch.Groups["versionNumber"].Value);
+    string   version     = versionMatch.Groups["versionNumber"].Value;
     DateOnly buildDate   = DateOnly.Parse(versionMatch.Groups["date"].Value);
     DateTime releaseDate = manifestJson["createdAt"]!.GetValue<DateTime>();
     Console.WriteLine(
         $"Current stable software version is RoomOS {version} (commit {versionMatch.Groups["commitHash"].Value}), built on {buildDate:D} and released on {releaseDate:D} ({(DateTime.Now - releaseDate).humanize()}).");
 
-    string     destinationFilePath = Path.GetFullPath(Path.Combine(Environment.ExpandEnvironmentVariables(destinationDirectory.ParsedValue), $"webex binaries {version.ToString(2)}.json"));
+    string     destinationFilePath = Path.GetFullPath(Path.Combine(Environment.ExpandEnvironmentVariables(destinationDirectory.ParsedValue), $"webex binaries {version}.json"));
     FileStream jsonFileStream;
 
     try {

@@ -7,9 +7,9 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
-        <RollForward>major</RollForward>
+        <RollForward>latesMajor</RollForward>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-        <Version>0.0.0</Version> <!-- Product version -->
+        <Version>0.1.1</Version> <!-- Product version -->
         <AssemblyName>CiscoEndpointUpdateManifestArchiver</AssemblyName> <!-- Executable base filename -->
         <AssemblyTitle>Cisco Endpoint Update Manifest Archiver</AssemblyTitle> <!-- File description -->
         <Product>$(AssemblyTitle)</Product> <!-- Product name -->
@@ -19,7 +19,6 @@
         <FileVersion>$(Version)</FileVersion> <!-- File version -->
         <NoWarn>CS8524</NoWarn>
         <ApplicationIcon>..\IssueCreator\cisco.ico</ApplicationIcon>
-        <PublishSingleFile>true</PublishSingleFile>
         <SelfContained>false</SelfContained>
         <DebugType>embedded</DebugType>
     </PropertyGroup>
@@ -28,16 +27,7 @@
         <PackageReference Include="Bom.Squad" Version="0.3.0" />
         <PackageReference Include="DataSizeUnits" Version="3.0.0-beta1" />
         <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <Folder Include="Properties\" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <Reference Include="Unfucked">
-            <HintPath>..\..\Unfucked\Unfucked\bin\Debug\net8.0\Unfucked.dll</HintPath>
-        </Reference>
+        <PackageReference Include="Unfucked.HTTP" Version="0.0.1-beta.3" />
     </ItemGroup>
 
 </Project>

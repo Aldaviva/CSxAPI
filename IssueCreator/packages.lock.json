@@ -6,13 +6,13 @@
         "type": "Direct",
         "requested": "[1.2.0, )",
         "resolved": "1.2.0",
-        "contentHash": "uF/PzSCVcb\u002Bb2nqVvHZbOqexoJ9R6QLjonugPf0PQl\u002B0h7YKaFZeXyspctbHe5HGlx7/Iuk5BErtk\u002Bt63ac/ZA=="
+        "contentHash": "uF/PzSCVcb+b2nqVvHZbOqexoJ9R6QLjonugPf0PQl+0h7YKaFZeXyspctbHe5HGlx7/Iuk5BErtk+t63ac/ZA=="
       },
       "McMaster.Extensions.CommandLineUtils": {
         "type": "Direct",
         "requested": "[4.1.1, )",
         "resolved": "4.1.1",
-        "contentHash": "zxgDY\u002BG5yVq2q8sVB3Z275Qkxed1jC95nwAfnlSyoG4l5Nicvd4\u002Bke1jXusEZEfyuErlAgXCKS937c13FmZWBg==",
+        "contentHash": "zxgDY+G5yVq2q8sVB3Z275Qkxed1jC95nwAfnlSyoG4l5Nicvd4+ke1jXusEZEfyuErlAgXCKS937c13FmZWBg==",
         "dependencies": {
           "System.ComponentModel.Annotations": "5.0.0"
         }
@@ -21,7 +21,13 @@
         "type": "Direct",
         "requested": "[14.0.0, )",
         "resolved": "14.0.0",
-        "contentHash": "jGOuTH1l\u002BTCpJH\u002BfwYOp7USzHDuGfN1jKbLz3J2COwyn\u002BwL08eynvpnM6rY2qkzIEXum3PN2p2QkP3BW/p9Qcw=="
+        "contentHash": "jGOuTH1l+TCpJH+fwYOp7USzHDuGfN1jKbLz3J2COwyn+wL08eynvpnM6rY2qkzIEXum3PN2p2QkP3BW/p9Qcw=="
+      },
+      "Unfucked": {
+        "type": "Direct",
+        "requested": "[0.0.1-beta.2, )",
+        "resolved": "0.0.1-beta.2",
+        "contentHash": "J8VhdV4QyfN40LO+m5tCa4O1lmpQXPB5rK2fmcJ/uN+y0VGldzjVNJnUxe/sPntPCxWuFc6OOjjPF9f6GpYOMQ=="
       },
       "System.ComponentModel.Annotations": {
         "type": "Transitive",

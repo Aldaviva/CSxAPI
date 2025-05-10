@@ -6,9 +6,9 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
-        <RollForward>major</RollForward>
+        <RollForward>latestMajor</RollForward>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-        <Version>1.0.4</Version> <!-- Product version -->
+        <Version>1.0.5</Version> <!-- Product version -->
         <AssemblyName>CiscoEndpointDocumentationReleaseIssueCreator</AssemblyName> <!-- Executable base filename -->
         <AssemblyTitle>Cisco Endpoint Documentation Release Issue Creator</AssemblyTitle> <!-- File description -->
         <Product>$(AssemblyTitle)</Product> <!-- Product name -->
@@ -18,14 +18,15 @@
         <FileVersion>$(Version)</FileVersion> <!-- File version -->
         <NoWarn>CS8524</NoWarn>
         <ApplicationIcon>cisco.ico</ApplicationIcon>
-        <PublishSingleFile>true</PublishSingleFile>
         <SelfContained>false</SelfContained>
+        <DebugType>embedded</DebugType>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="AngleSharp" Version="1.2.0" />
         <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
         <PackageReference Include="Octokit" Version="14.0.0" />
+        <PackageReference Include="Unfucked" Version="0.0.1-beta.2" />
     </ItemGroup>
 
 </Project>

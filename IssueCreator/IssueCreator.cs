@@ -8,19 +8,20 @@ using System.Globalization;
 using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Unfucked;
 
 namespace IssueCreator;
 
-internal class IssueCreator {
+internal partial class IssueCreator {
 
     private const string RepositoryOwner      = "Aldaviva";
     private const string RepositoryName       = "CSxAPI";
     private const string IssueLabel           = "upstream update";
     private const string UserAgentHeaderValue = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
-    private static readonly AssemblyName Assembly = System.Reflection.Assembly.GetExecutingAssembly().GetName();
-    private static readonly Url DocumentationListPageLocation = new("https://www.cisco.com/c/en/us/support/collaboration-endpoints/spark-room-kit-series/products-command-reference-list.html");
-    private static readonly StringComparer StringComparer = StringComparer.Create(CultureInfo.GetCultureInfo("en-US"), true);
+    private static readonly AssemblyName   CurrentAssembly               = Assembly.GetExecutingAssembly().GetName();
+    private static readonly Url            DocumentationListPageLocation = new("https://www.cisco.com/c/en/us/support/collaboration-endpoints/spark-room-kit-series/series.html#~tab-documents");
+    private static readonly StringComparer StringComparer                = StringComparer.Create(CultureInfo.GetCultureInfo("en-US"), true);
 
     private readonly IBrowsingContext _anglesharp = BrowsingContext.New(Configuration.Default.With(new DefaultHttpRequester(UserAgentHeaderValue)).WithDefaultLoader());
     private readonly IGitHubClient    _gitHubClient;
@@ -45,7 +46,7 @@ internal class IssueCreator {
 
     private IssueCreator(string gitHubAccessToken, bool isDryRun) {
         _isDryRun     = isDryRun;
-        _gitHubClient = new GitHubClient(new ProductHeaderValue(Assembly.Name!, Assembly.Version!.ToString(3))) { Credentials = new Credentials(gitHubAccessToken) };
+        _gitHubClient = new GitHubClient(new ProductHeaderValue(CurrentAssembly.Name!, CurrentAssembly.Version!.ToString(3))) { Credentials = new Credentials(gitHubAccessToken) };
     }
 
     private async Task CreateIssueIfMissing() {
@@ -56,12 +57,21 @@ internal class IssueCreator {
         Console.WriteLine("Checking existing GitHub issues...");
         if (await findIssueForLatestDocumentation(latestDocumentation) is not { } existingIssue) {
             Console.WriteLine("No existing issues found, so creating a new issue...");
+            NewIssue issue = ConstructIssue(latestDocumentation);
             if (!_isDryRun) {
-                Issue newIssue = await CreateIssue(latestDocumentation);
-                Console.WriteLine($"Created issue #{newIssue.Number}: {newIssue.Title}");
+                Issue publishedIssue = await PublishIssue(issue);
+                Console.WriteLine($"Created issue #{publishedIssue.Number} at {publishedIssue.HtmlUrl}");
             } else {
                 Console.WriteLine("Would have created a new issue if not in dry-run mode.");
             }
+            Console.WriteLine(
+                $"""
+                 Repository:  {RepositoryOwner}/{RepositoryName}
+                 Title:       {issue.Title}
+                 Assigned to: {issue.Assignees.JoinHumanized()}
+                 Labels:      {issue.Labels.Select(label => $"\"{label}\"").Join(separator: ", ")}
+                 Body:        {issue.Body}
+                 """);
         } else {
             Console.WriteLine($"GitHub issue #{existingIssue.Number} already exists, so not creating a new issue");
         }
@@ -74,12 +84,9 @@ internal class IssueCreator {
             throw new ApplicationException($"Fetching documentation list page failed with status code {listPage.StatusCode}");
         }
 
-        IHtmlAnchorElement latestDocumentationLink = listPage.QuerySelectorAll(".heading")
-            .First(element => element.Text().StartsWith("Cisco "))
-            .NextElementSibling!
-            .QuerySelector<IHtmlAnchorElement>("a")!;
+        IHtmlAnchorElement latestDocumentationLink = listPage.QuerySelector<IHtmlAnchorElement>("#Reference + h3 + ul li a")!;
 
-        string releaseName = Regex.Match(latestDocumentationLink.Text, @"\((?<name>.*?)\)").Groups["name"].Value;
+        string releaseName = ReleaseNamePattern().Match(latestDocumentationLink.Text).Groups["name"].Value;
 
         return new PublishedDocumentation(releaseName, new Uri(latestDocumentationLink.Href));
     }
@@ -93,22 +100,27 @@ internal class IssueCreator {
         return upstreamUpdateIssues.FirstOrDefault(issue => StringComparer.Equals(issue.Title, expectedIssueTitle));
     }
 
-    private async Task<Issue> CreateIssue(PublishedDocumentation documentation) => await _gitHubClient.Issue.Create(RepositoryOwner, RepositoryName,
-        new NewIssue(GetIssueTitle(documentation.Name)) {
-            Assignees = { RepositoryOwner },
-            Labels    = { IssueLabel },
-            // ⚠ Warning: The first line of the Body string must remain unchanged because an email filter matches it in my MDaemon user account
-            Body = $"""
-                    Cisco has released documentation for a new on-premises endpoint software release.
+    private async Task<Issue> PublishIssue(NewIssue issue) => await _gitHubClient.Issue.Create(RepositoryOwner, RepositoryName, issue);
 
-                    - **[{documentation.Name} API documentation PDF]({documentation.Location})**
-                        - [All PDF versions]({DocumentationListPageLocation})
-                        - [API documentation website](https://roomos.cisco.com/xapi)
-                    - [Release notes](https://roomos.cisco.com/print/WhatsNew/ReleaseNotesRoomOS_11)
-                    - [Software downloads](https://software.cisco.com/download/home/286314238/type/280886992/release/)
-                    """
-        });
+    private static NewIssue ConstructIssue(PublishedDocumentation documentation) => new(GetIssueTitle(documentation.Name)) {
+        Assignees = { RepositoryOwner },
+        Labels    = { IssueLabel },
+        // ⚠ Warning: The first line of the Body string must remain unchanged because an email filter matches it in my MDaemon user account
+        Body = $"""
+                Cisco has released documentation for a new on-premises endpoint software release.
+
+                - **[{documentation.Name} API documentation PDF]({documentation.Location})**
+                    - [All PDF versions]({DocumentationListPageLocation})
+                    - [All PDF versions (alternative list)](https://www.cisco.com/c/en/us/support/collaboration-endpoints/spark-room-kit-series/products-command-reference-list.html)
+                    - [API documentation website](https://roomos.cisco.com/xapi)
+                - [Release notes](https://roomos.cisco.com/print/WhatsNew/ReleaseNotesRoomOS_11)
+                - [Software downloads](https://software.cisco.com/download/home/286314238/type/280886992/release/)
+                """
+    };
 
     private static string GetIssueTitle(string releaseName) => $"Update for {releaseName}";
+
+    [GeneratedRegex(@"\((?<name>.*?)\)")]
+    private static partial Regex ReleaseNamePattern();
 
 }
