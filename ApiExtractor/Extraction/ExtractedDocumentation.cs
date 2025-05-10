@@ -42,7 +42,8 @@ public enum UserRole {
     User,
     Audit,
     Roomcontrol,
-    Touchuser
+    Touchuser,
+    Paireduser
 
 }
 
