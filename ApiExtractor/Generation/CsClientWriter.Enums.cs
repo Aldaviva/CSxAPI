@@ -195,7 +195,7 @@ public static partial class CsClientWriter {
                 "+" when isTimeZone                               => "_Plus_", //ႵᏐǂߙƚϯᵻᵼ
                 "-" when isTimeZone && value.Name.Contains("GMT") => "_Minus_",
                 "-" when isTimeZone                               => "_",
-                "-" when match.Index == 0                         => "NEGATIVE_", // xConfiguration Bluetooth LEAdvertisementOutputLevel
+                "-" when match.Index == 0                         => "NEGATIVE_", // some xConfiguration Bluetooth LEAdvertisementOutputLevel values start with '-' (also don't split on '-' above)
                 _                                                 => ""
             }, RegexOptions.IgnoreCase).ToUpperFirstLetter();
             return char.IsLetter(name[0]) ? name : "_" + name;

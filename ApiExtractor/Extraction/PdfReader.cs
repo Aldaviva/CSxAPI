@@ -493,7 +493,8 @@ public static class PdfReader {
                                         throw new ParsingException(word, state, characterStyle, page, "found parameter value space without a previously-parsed parameter name");
                                     }
 
-                                    if (enumList.EndsWith(',')) {
+                                    // split zone names separately in Fixes, because as of 11.27 they're unfortunately slash/delimited
+                                    if (enumList.EndsWith(',') || command.Name.SequenceEqual(["xConfiguration", "Time", "Zone"])) {
                                         enumListDelimiter = ",";
                                     }
 
@@ -675,12 +676,7 @@ public static class PdfReader {
                             } else if (command is DocXStatus status2) {
                                 status2.ReturnValueSpace.Description = AppendWord(status2.ReturnValueSpace.Description, word, previousWordBaseline);
                                 state                                = ParserState.ValuespaceDescription;
-                            } else if (command is DocXConfiguration config && word.Text == "Unique" /*&& ((List<string>) [
-                                           "xConfiguration Audio Input MicrophoneMode",
-                                           "xConfiguration Audio Microphones BeamMix Inputs",
-                                           "xConfiguration Audio Microphones NearTalkerSector Mode",
-                                           "xConfiguration Audio Microphones PhantomPower"
-                                       ]).Any(method => config.name.SequenceEqual(method.Split(' ')))*/) {
+                            } else if (command is DocXConfiguration && word.Text == "Unique") {
                                 parameter = new IntParameter { Name = "n", Description = "DELETE ME" };
                                 state     = ParserState.ValuespaceTermDefinition;
                             } else {
