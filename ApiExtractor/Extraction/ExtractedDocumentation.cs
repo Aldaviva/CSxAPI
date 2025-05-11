@@ -75,7 +75,7 @@ public enum Product {
 
 public class DocXConfiguration: AbstractCommand {
 
-    public ICollection<Parameter> Parameters { get; set; } = new List<Parameter>();
+    public IList<Parameter> Parameters { get; set; } = new List<Parameter>();
 
     public override IList<string> NameWithoutBrackets =>
         // name.Where((s, i) => !parameters.Any(parameter => parameter is IntParameter { indexOfParameterInName: { } paramIndex } && paramIndex == i)).ToList();
@@ -107,7 +107,7 @@ public enum DataType {
 public class IntParameter: Parameter {
 
     public int? IndexOfParameterInName { get; set; }
-    public ICollection<IntRange> Ranges { get; set; } = new List<IntRange>();
+    public IList<IntRange> Ranges { get; set; } = new List<IntRange>();
     public override DataType Type => DataType.Integer;
     public string? NamePrefix { get; set; }
 
@@ -166,7 +166,7 @@ public class DocXCommand: DocXConfiguration { }
 
 public class DocXStatus: AbstractCommand {
 
-    public ICollection<IntParameter> ArrayIndexParameters { get; } = new List<IntParameter>();
+    public IList<IntParameter> ArrayIndexParameters { get; } = new List<IntParameter>();
     public ValueSpace ReturnValueSpace { get; set; } = null!;
 
     public override IList<string> NameWithoutBrackets =>
@@ -184,7 +184,7 @@ public abstract class ValueSpace {
 
 internal class IntValueSpace: ValueSpace {
 
-    public ICollection<IntRange> Ranges = new List<IntRange>();
+    public IList<IntRange> Ranges = new List<IntRange>();
     public override DataType Type => DataType.Integer;
 
     /// <summary>

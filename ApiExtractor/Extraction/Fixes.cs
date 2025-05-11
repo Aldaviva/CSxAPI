@@ -6,6 +6,9 @@ namespace ApiExtractor.Extraction;
 
 public class Fixes(ExtractedDocumentation documentation) {
 
+    /*
+     * These fixes are applied after parsing the PDF but before generating the client code.
+     */
     public void Fix() {
         // Value space descriptions that depend heavily on the endpoint model are hard to parse, so hard-code the value spaces
         setConfigurationValueSpace("xConfiguration Video Input AirPlay Mode", "Off", "On");
@@ -58,7 +61,7 @@ public class Fixes(ExtractedDocumentation documentation) {
         // This status has a malformed description in the PDF – it is missing the "Value space of the result returned:" string
         // Therefore, we cannot parse the value space normally.
         // To work around this, manually add the value space definition here.
-        documentation.Statuses.First(status => status.Name.SequenceEqual("xStatus Video Output Connector [n] ConnectedDevice SupportedFormat Res_1920_1200_50".Split(' '))).ReturnValueSpace =
+        FindCommand<DocXStatus>("xStatus Video Output Connector [n] ConnectedDevice SupportedFormat Res_1920_1200_50")!.ReturnValueSpace =
             new EnumValueSpace { PossibleValues = new HashSet<EnumValue> { new("False") { Description = "The format is not supported." }, new("True") { Description = "The format is supported." } } };
 
         // Starting in RoomOS 11.14, the codec can control external serial devices using serial-USB adapters.
@@ -80,7 +83,7 @@ public class Fixes(ExtractedDocumentation documentation) {
         }
 
         // xCommand Bookings List is mistakenly documented to have two duplicate "offset" parameters
-        DocXCommand bookingsList = documentation.Commands.First(command => command.Name.SequenceEqual("xCommand Bookings List".Split(' ')));
+        DocXCommand bookingsList = FindCommand<DocXCommand>("xCommand Bookings List")!;
         foreach (Parameter extraParam in bookingsList.Parameters.Where(p => p.Name == "Offset").Skip(1).ToList()) {
             bookingsList.Parameters.Remove(extraParam);
         }
@@ -92,6 +95,11 @@ public class Fixes(ExtractedDocumentation documentation) {
                      cfg.Name is ["xConfiguration", "Audio", "Input", "Ethernet", _, "Channel", _, "Level" or "Mode" or "Pan" or "Zone"] && cfg.AppliesTo.SetEquals([Product.RoomBar])).ToList()) {
             documentation.Configurations.Remove(duplicateConfig);
         }
+
+        // The last word in "xConfiguration Video Output Connector [n] HDCPForce1_4" is the number 4, so the auto-generated parameter name for setting this configuration is illegal because it starts with a number.
+        FindCommand<DocXConfiguration>("xConfiguration Video Output Connector [n] HDCPForce1_4")!.Parameters[1].Name = "hdcpForce1_4";
+
+        DocXConfiguration bleLevel = FindCommand<DocXConfiguration>("xConfiguration Bluetooth LEAdvertisementOutputLevel")!;
 
     }
 
@@ -107,13 +115,12 @@ public class Fixes(ExtractedDocumentation documentation) {
     }
 
     private T? FindCommand<T>(string path) where T: IPathNamed {
-        IList<string> nameQuery = path.Split(' ');
-        IList<T> collection = typeof(T) switch {
-            var t when t == typeof(DocXCommand)       => (List<T>) documentation.Commands,
-            var t when t == typeof(DocXConfiguration) => (List<T>) documentation.Configurations,
-            var t when t == typeof(DocXStatus)        => (List<T>) documentation.Statuses,
-            var t when t == typeof(DocXEvent)         => (List<T>) documentation.Events
-            // _                                         => null
+        string[] nameQuery = path.Split(' ');
+        ICollection<T> collection = typeof(T) switch {
+            var t when t == typeof(DocXCommand)       => (ICollection<T>) documentation.Commands,
+            var t when t == typeof(DocXConfiguration) => (ICollection<T>) documentation.Configurations,
+            var t when t == typeof(DocXStatus)        => (ICollection<T>) documentation.Statuses,
+            var t when t == typeof(DocXEvent)         => (ICollection<T>) documentation.Events
         };
 
         return collection.FirstOrDefault(command => command.Name.SequenceEqual(nameQuery));

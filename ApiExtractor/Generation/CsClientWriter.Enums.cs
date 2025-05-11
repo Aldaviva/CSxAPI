@@ -100,15 +100,15 @@ public static partial class CsClientWriter {
 
                                                 {{GeneratedAttribute}}
                                                 internal static class EnumSerializer {
-                                                
+
                                                     private static readonly IDictionary<Type, (Func<Enum, string> serialize, Func<string, Enum> deserialize)> enumSerializers = new Dictionary<Type, (Func<Enum, string>, Func<string, Enum>)>();
-                                                
+
                                                     public static T Deserialize<T>(string serialized) where T: Enum => (T) enumSerializers[typeof(T)].deserialize(serialized);
-                                                
+
                                                     public static string Serialize<T>(T deserialized) where T: Enum => enumSerializers[typeof(T)].serialize(deserialized);
-                                                
+
                                                     private static string DefaultSerializer(Enum o) => o.ToString();
-                                                
+
                                                     static EnumSerializer() {
 
                                                 """);
@@ -118,7 +118,6 @@ public static partial class CsClientWriter {
                 string enumTypeName = GetEnumName(command, parameter.Name);
 
                 IEnumerable<string> serializerSwitchArms = parameter.PossibleValues
-                    // .Where(value => xapiEnumValueToCsIdentifier(command, parameter, value) != value.name)
                     .Select(value => $"{enumTypeName}.{XapiEnumValueToCsIdentifier(command, parameter, value)} => \"{value.Name}\"")
                     .ToList();
 
@@ -187,14 +186,16 @@ public static partial class CsClientWriter {
         await enumSerializerWriter.WriteAsync("    }\r\n}");
 
         static string XapiEnumValueToCsIdentifier(AbstractCommand? command, EnumParameter? parameter, EnumValue value) {
-            bool   isTimeZone = (command?.Name.SequenceEqual(new[] { "xConfiguration", "Time", "Zone" }) ?? false) && parameter?.Name == "Zone";
-            string name       = isTimeZone ? value.Name : string.Join(null, value.Name.Split('-').Select(s => s.ToUpperFirstLetter()));
-            name = Regex.Replace(name, @"[^a-z0-9_]", match => match.Value switch {
+            bool isTimeZone = (command?.Name.SequenceEqual(["xConfiguration", "Time", "Zone"]) ?? false) && parameter?.Name == "Zone";
+            string name = isTimeZone || (parameter?.PossibleValues.Any(otherValue => otherValue.Name.StartsWith('-')) ?? false) ? value.Name
+                : string.Join(null, value.Name.Split('-').Select(s => s.ToUpperFirstLetter()));
+            name = Regex.Replace(name, "[^a-z0-9_]", match => match.Value switch {
                 "."                                               => "_",
                 "/"                                               => "_",      //"Ⳇ",
                 "+" when isTimeZone                               => "_Plus_", //ႵᏐǂߙƚϯᵻᵼ
                 "-" when isTimeZone && value.Name.Contains("GMT") => "_Minus_",
                 "-" when isTimeZone                               => "_",
+                "-" when match.Index == 0                         => "NEGATIVE_", // xConfiguration Bluetooth LEAdvertisementOutputLevel
                 _                                                 => ""
             }, RegexOptions.IgnoreCase).ToUpperFirstLetter();
             return char.IsLetter(name[0]) ? name : "_" + name;
