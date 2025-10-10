@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
-        <Version>11.27.0.0</Version>
+        <Version>11.32.0.0</Version>
         <Authors>Ben Hutchison</Authors>
         <Copyright>© 2025 $(Authors)</Copyright>
         <Company>$(Authors)</Company>
@@ -35,7 +35,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
-        <PackageReference Include="StreamJsonRpc" Version="2.21.69" />
+        <PackageReference Include="StreamJsonRpc" Version="2.22.23" />
     </ItemGroup>
 
     <ItemGroup>

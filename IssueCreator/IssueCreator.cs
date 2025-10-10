@@ -1,4 +1,4 @@
-﻿using AngleSharp;
+using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Io;
@@ -19,9 +19,11 @@ internal partial class IssueCreator {
     private const string IssueLabel           = "upstream update";
     private const string UserAgentHeaderValue = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
-    private static readonly AssemblyName   CurrentAssembly               = Assembly.GetExecutingAssembly().GetName();
-    private static readonly Url            DocumentationListPageLocation = new("https://www.cisco.com/c/en/us/support/collaboration-endpoints/spark-room-kit-series/series.html#~tab-documents");
-    private static readonly StringComparer StringComparer                = StringComparer.Create(CultureInfo.GetCultureInfo("en-US"), true);
+    private static readonly AssemblyName   CurrentAssembly = Assembly.GetExecutingAssembly().GetName();
+    private static readonly StringComparer StringComparer  = StringComparer.Create(CultureInfo.GetCultureInfo("en-US"), true);
+
+    private static readonly Url DocumentationListPageLocation = new(
+        "https://www.cisco.com/c/en/us/support/collaboration-endpoints/spark-room-kit-series/series.html#~tab-documents:~:text=Reference-,Command%20References,-Applicable%20to%20Multiple");
 
     private readonly IBrowsingContext _anglesharp = BrowsingContext.New(Configuration.Default.With(new DefaultHttpRequester(UserAgentHeaderValue)).WithDefaultLoader());
     private readonly IGitHubClient    _gitHubClient;
@@ -110,8 +112,7 @@ internal partial class IssueCreator {
                 Cisco has released documentation for a new on-premises endpoint software release.
 
                 - **[{documentation.Name} API documentation PDF]({documentation.Location})**
-                    - [All PDF versions]({DocumentationListPageLocation})
-                    - [All PDF versions (alternative list)](https://www.cisco.com/c/en/us/support/collaboration-endpoints/spark-room-kit-series/products-command-reference-list.html)
+                    - [All PDF versions]({DocumentationListPageLocation}) ([alternative](https://www.cisco.com/c/en/us/support/collaboration-endpoints/spark-room-kit-series/products-command-reference-list.html))
                     - [API documentation website](https://roomos.cisco.com/xapi)
                 - [Release notes](https://roomos.cisco.com/print/WhatsNew/ReleaseNotesRoomOS_11)
                 - [Software downloads](https://software.cisco.com/download/home/286314238/type/280886992/release/)

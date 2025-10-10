@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -136,6 +136,11 @@ public class Fixes(ExtractedDocumentation documentation) {
         } else {
             throw new Exception($"Time zone list needs to be updated in {nameof(Fixes)}.{nameof(ExpectedTimeZones)}");
         }
+
+        // In 11.32, many parameters are documented twice in the PDF, such as xCommand Bookings Delete MeetingId (in the Usage section, under the "where")
+        foreach (DocXCommand command in documentation.Commands) {
+            command.Parameters = command.Parameters.DistinctBy(parameter => parameter.Name).ToList();
+        }
     }
 
     private void setConfigurationValueSpace(string path, params string[] values) {
@@ -261,7 +266,7 @@ public class Fixes(ExtractedDocumentation documentation) {
         "America/Coral_Harbour",
         "America/Cordoba",
         "America/Costa_Rica",
-        // "America/Coyhaique", // added in 11.28, not 11.27
+        "America/Coyhaique",
         "America/Creston",
         "America/Cuiaba",
         "America/Curacao",
