@@ -1,5 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CSxAPI.API.Serialization;
 
@@ -20,7 +20,9 @@ internal static class ValueSerializer {
     public static string Serialize(int? deserialized, string optionalValue) => deserialized?.ToString() ?? optionalValue;
 
     [return: NotNullIfNotNull(nameof(deserialized))]
-    public static string? Serialize(Enum? deserialized) => deserialized is null ? null : EnumSerializer.Serialize(deserialized);
+    public static string? Serialize<T>(T? deserialized) where T: struct, Enum => deserialized is null ? null : EnumSerializer.Serialize(deserialized.Value);
+
+    public static string Serialize<T>(T deserialized) where T: Enum => EnumSerializer.Serialize(deserialized);
 
     public static T DeserializeEvent<T>(JObject serialized) => EventDeserializer.Deserialize<T>(serialized);
 

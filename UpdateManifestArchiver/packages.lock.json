@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    "net8.0": {
+    "net10.0": {
       "Bom.Squad": {
         "type": "Direct",
         "requested": "[0.3.0, )",
@@ -10,9 +10,9 @@
       },
       "DataSizeUnits": {
         "type": "Direct",
-        "requested": "[3.0.0-beta1, )",
-        "resolved": "3.0.0-beta1",
-        "contentHash": "Yxqk4kiw52biTvSzyV8YAGcixe4F30JdPzisihLSuapgB0ON6m0ONnA+k5LwwMag3kapYokivsoLGI8P4JUdaA=="
+        "requested": "[3.0.0-beta2, )",
+        "resolved": "3.0.0-beta2",
+        "contentHash": "w2/05gKkG1EGz4f6nPB2WXGQn9H9VIXN+ZICruOuKJ2UB/vhm5mOdp8IPFRshn8VGTSP/Q/QwIbFAuQszVo27A=="
       },
       "McMaster.Extensions.CommandLineUtils": {
         "type": "Direct",
@@ -25,12 +25,11 @@
       },
       "Unfucked.HTTP": {
         "type": "Direct",
-        "requested": "[0.0.1-beta.3, )",
-        "resolved": "0.0.1-beta.3",
-        "contentHash": "JMXFWAEEOBS3XrGnDoSKuDZeQnrg13HsV4AhAG7XbD6iFhB991bCE5rsKQtGRB5956o7DgYqwHw30gZOvcqJRQ==",
+        "requested": "[0.0.1-beta.22, )",
+        "resolved": "0.0.1-beta.22",
+        "contentHash": "q6/22H0aX1M+plHpMqHd69TMg/p8Ekft+uW5QsPAK+jamiflNQqLLcQrQwZIH34j0CEk16/4jEDhILlCvEPpYA==",
         "dependencies": {
-          "System.Text.Json": "8.0.5",
-          "Unfucked": "0.0.1-beta.2"
+          "Unfucked": "0.0.1-beta.29"
         }
       },
       "System.ComponentModel.Annotations": {
@@ -38,21 +37,16 @@
         "resolved": "5.0.0",
         "contentHash": "dMkqfy2el8A8/I76n2Hi1oBFEbG1SfxD2l5nhwXV3XjlnOmwxJlQbYpJH4W51odnU9sARCSAgv7S3CyAFMkpYg=="
       },
-      "System.Text.Json": {
-        "type": "Transitive",
-        "resolved": "8.0.5",
-        "contentHash": "0f1B50Ss7rqxXiaBJyzUu9bWFOO2/zSlifZ/UNMdiIpDYe4cY4LQQicP4nirK1OS31I43rn062UIJ1Q9bpmHpg=="
-      },
       "Unfucked": {
         "type": "Transitive",
-        "resolved": "0.0.1-beta.2",
-        "contentHash": "J8VhdV4QyfN40LO+m5tCa4O1lmpQXPB5rK2fmcJ/uN+y0VGldzjVNJnUxe/sPntPCxWuFc6OOjjPF9f6GpYOMQ=="
+        "resolved": "0.0.1-beta.29",
+        "contentHash": "BwvicbiYbdSx5FJOorXfng+uidzpoCa49uLNPP6/X8bJHJA8gqbo6FvQruDYrXVX9395jPWPmcha2RjfYI2sGQ=="
       }
     },
-    "net8.0/linux-arm": {},
-    "net8.0/linux-arm64": {},
-    "net8.0/linux-x64": {},
-    "net8.0/win-arm64": {},
-    "net8.0/win-x64": {}
+    "net10.0/linux-arm": {},
+    "net10.0/linux-arm64": {},
+    "net10.0/linux-x64": {},
+    "net10.0/win-arm64": {},
+    "net10.0/win-x64": {}
   }
 }
