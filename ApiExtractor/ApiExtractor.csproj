@@ -5,7 +5,7 @@
         <TargetFramework>net10.0</TargetFramework>
         <LangVersion>latest</LangVersion>
         <Nullable>enable</Nullable>
-        <NoWarn>CS8524, CS8846, CS8509</NoWarn>
+        <NoWarn>$(NoWarn);CS8846;CS8509</NoWarn>
         <Authors>Ben Hutchison</Authors>
         <Copyright>© 2026 $(Authors)</Copyright>
         <Company>$(Authors)</Company>

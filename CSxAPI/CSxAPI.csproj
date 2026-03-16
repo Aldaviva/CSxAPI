@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
-        <Version>11.32.0.1</Version>
+        <Version>26.2.0.0</Version>
         <Authors>Ben Hutchison</Authors>
         <Copyright>© 2026 $(Authors)</Copyright>
         <Company>$(Authors)</Company>
@@ -13,11 +13,12 @@
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
         <ImplicitUsings>true</ImplicitUsings>
-        <NoWarn>VSTHRD200, VSTHRD101, VSTHRD002, VSTHRD003, CS8524, IDE0079</NoWarn>
+        <NoWarn>$(NoWarn);VSTHRD200;VSTHRD101;VSTHRD002;VSTHRD003;IDE0079</NoWarn>
         <RootNamespace>CSxAPI</RootNamespace>
         <Description>$(AssemblyTitle)</Description>
         <PackageProjectUrl>https://github.com/Aldaviva/CSxAPI</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/Aldaviva/CSxAPI.git</RepositoryUrl>
+        <PackageReleaseNotes>$(PackageProjectUrl)/releases/tag/$(Version)</PackageReleaseNotes>
+        <RepositoryUrl>$(PackageProjectUrl).git</RepositoryUrl>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -33,7 +34,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.102" PrivateAssets="All" />
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.201" PrivateAssets="All" />
         <PackageReference Include="StreamJsonRpc" Version="2.22.23" />
     </ItemGroup>
 
