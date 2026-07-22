@@ -1,4 +1,4 @@
-﻿using MoreLinq;
+using MoreLinq;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -299,7 +299,7 @@ public static class PdfReader {
                         case ParserState.AppliesTo or ParserState.AppliesToProducts:
                             state = ParserState.AppliesToProducts;
                             string productName = (partialProductName ?? string.Empty) + word.Text;
-                            if (ParseProduct(productName) is { } product) {
+                            if (ParseProduct(productName) is {} product) {
                                 command.AppliesTo.Add(product);
                                 partialProductName = null;
                             } else if (word.Text is not ("All" or "products")) {
@@ -322,7 +322,7 @@ public static class PdfReader {
                         case ParserState.ValuespaceTermDefinition:
                             if (word.Text != "[" && word.Text != "]") {
                                 // skip delimiters
-                            } else if (ParseProduct(word.Text) is { } product2 && (parameter as IntParameter)?.Ranges.LastOrDefault() is { } lastRange) {
+                            } else if (ParseProduct(word.Text) is {} product2 && (parameter as IntParameter)?.Ranges.LastOrDefault() is {} lastRange) {
                                 lastRange.AppliesTo.Add(product2);
                             }
 
@@ -407,7 +407,7 @@ public static class PdfReader {
                             parameterUsageIndex++;
                             break;
                         case ParserState.UsageParameterName or ParserState.ValuespaceTermDefinition when command is DocXConfiguration xConfiguration &&
-                            xConfiguration.Parameters.FirstOrDefault(p => word.Text == p.Name + ':' && (p as IntParameter)?.IndexOfParameterInName is not null) is { } positionalParam:
+                            xConfiguration.Parameters.FirstOrDefault(p => word.Text == p.Name + ':' && (p as IntParameter)?.IndexOfParameterInName is not null) is {} positionalParam:
                             parameter = positionalParam;
                             state     = ParserState.UsageParameterDescription;
                             break;
@@ -467,7 +467,7 @@ public static class PdfReader {
                                     (command as DocXConfiguration)?.Parameters.Add(parameter);
                                     parameterName = null;
                                     break;
-                                case { } valueSpace when parameter is null && numericRangePattern.Match(valueSpace) is { Success: true } match:
+                                case {} valueSpace when parameter is null && numericRangePattern.Match(valueSpace) is { Success: true } match:
                                     if (parameterName is null) {
                                         throw new ParsingException(word, state, characterStyle, page, "found parameter value space without a previously-parsed parameter name");
                                     }
@@ -488,7 +488,7 @@ public static class PdfReader {
                                     parameterName = null;
 
                                     break;
-                                case { } enumList when parameter is null:
+                                case {} enumList when parameter is null:
                                     if (parameterName is null) {
                                         throw new ParsingException(word, state, characterStyle, page, "found parameter value space without a previously-parsed parameter name");
                                     }
@@ -508,13 +508,13 @@ public static class PdfReader {
                                     (command as DocXConfiguration)?.Parameters.Add(parameter);
                                     parameterName = null;
                                     break;
-                                case { } valueSpace when parameter is StringParameter param && numericRangePattern.Match(valueSpace) is { Success: true } match:
+                                case {} valueSpace when parameter is StringParameter param && numericRangePattern.Match(valueSpace) is { Success: true } match:
                                     // It's an integer encoded as a string!
                                     param.MinimumLength = match.Groups["min"].Length;
                                     param.MaximumLength = match.Groups["max"].Length;
                                     state               = ParserState.UsageParameterValueSpaceAppliesTo;
                                     break;
-                                case { } valueSpace when parameter is StringParameter param && Regex.Match(valueSpace, @"^\((?<min>-?\d+),(?<max>-?\d+)\)$") is { Success: true } match:
+                                case {} valueSpace when parameter is StringParameter param && Regex.Match(valueSpace, @"^\((?<min>-?\d+),(?<max>-?\d+)\)$") is { Success: true } match:
                                     try {
                                         param.MinimumLength = int.Parse(match.Groups["min"].Value);
                                         param.MaximumLength = int.Parse(match.Groups["max"].Value);
@@ -525,7 +525,7 @@ public static class PdfReader {
 
                                     state = ParserState.UsageParameterValueSpaceAppliesTo;
                                     break;
-                                case { } valueSpace when parameter is StringParameter param && valueSpace.StartsWith('(') && valueSpace.EndsWith(','):
+                                case {} valueSpace when parameter is StringParameter param && valueSpace.StartsWith('(') && valueSpace.EndsWith(','):
                                     try {
                                         param.MinimumLength = int.Parse(valueSpace[1..^1]);
                                     } catch (FormatException) {
@@ -534,7 +534,7 @@ public static class PdfReader {
                                     }
 
                                     break;
-                                case { } valueSpace when parameter is StringParameter param && valueSpace.EndsWith(')'):
+                                case {} valueSpace when parameter is StringParameter param && valueSpace.EndsWith(')'):
                                     try {
                                         param.MaximumLength = int.Parse(valueSpace[..^1]);
                                     } catch (FormatException) {
@@ -544,11 +544,11 @@ public static class PdfReader {
 
                                     state = ParserState.UsageParameterValueSpaceAppliesTo;
                                     break;
-                                case { } valueSpace when parameter is IntParameter param && numericRangePattern.Match(valueSpace) is { Success: true } match:
+                                case {} valueSpace when parameter is IntParameter param && numericRangePattern.Match(valueSpace) is { Success: true } match:
                                     param.Ranges.Add(new IntRange { Minimum = int.Parse(match.Groups["min"].Value), Maximum = int.Parse(match.Groups["max"].Value) });
                                     // state = ParserState.USAGE_PARAMETER_VALUE_SPACE_APPLIES_TO; //sometimes might be followed by more text
                                     break;
-                                case { } enumList when parameter is EnumParameter param:
+                                case {} enumList when parameter is EnumParameter param:
                                     //second line of wrapped enum values
                                     if (enumListDelimiter == "," && (enumList.EndsWith('_') || enumList.EndsWith('/'))) {
                                         partialEnumValue += enumList;
@@ -584,7 +584,7 @@ public static class PdfReader {
 
                     break;
                 case CharacterStyle.ValuespaceTerm:
-                    if ((parameter as IEnumValues ?? (command as DocXStatus)?.ReturnValueSpace as IEnumValues) is { } enumValues) {
+                    if ((parameter as IEnumValues ?? (command as DocXStatus)?.ReturnValueSpace as IEnumValues) is {} enumValues) {
                         enumValue = enumValues.PossibleValues.FirstOrDefault(value => value.Name == word.Text.TrimEnd(':'));
                         state     = ParserState.ValuespaceTermDefinition;
                     } else if (parameter is not null) {
@@ -624,7 +624,7 @@ public static class PdfReader {
                             break;
                         case ParserState.RequiresUserRoleRoles when !IsDifferentParagraph(word, previousWordBaseline):
                             foreach (string roleName in word.Text.TrimEnd(',').Split(',')) {
-                                if (ParseEnum<UserRole>(roleName) is { } role) {
+                                if (ParseEnum<UserRole>(roleName) is {} role) {
                                     command.RequiresUserRole.Add(role);
                                 } else {
                                     throw new ParsingException(word, state, characterStyle, page, "role was not a recognized user role");
@@ -687,7 +687,7 @@ public static class PdfReader {
                         case ParserState.ValuespaceTermDefinition:
                             if (enumValue is not null) {
                                 enumValue.Description = AppendWord(enumValue.Description, word, previousWordBaseline);
-                            } else if ((parameter as IntParameter)?.Ranges.LastOrDefault() is { } lastRange) {
+                            } else if ((parameter as IntParameter)?.Ranges.LastOrDefault() is {} lastRange) {
                                 lastRange.Description = AppendWord(lastRange.Description, word, previousWordBaseline);
                             }
 

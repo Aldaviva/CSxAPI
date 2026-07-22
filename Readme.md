@@ -49,7 +49,7 @@ This library can send and receive xCommands, xConfigurations, xStatuses, and xEv
 The [**`CSxAPI`**](https://www.nuget.org/packages/csxapi) package is available on NuGet Gallery.
 
 ```ps1
-dotnet add package CSxAPI
+dotnet package add CSxAPI
 ```
 
 ## API documentation

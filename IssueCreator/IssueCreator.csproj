@@ -23,10 +23,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AngleSharp" Version="1.4.0" />
-        <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
+        <PackageReference Include="AngleSharp" Version="1.5.2" />
+        <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="5.1.0" />
         <PackageReference Include="Octokit" Version="14.0.0" />
-        <PackageReference Include="Unfucked" Version="0.0.1-beta.31" />
+        <PackageReference Include="Unfucked" Version="0.0.1-beta.49" />
     </ItemGroup>
 
 </Project>

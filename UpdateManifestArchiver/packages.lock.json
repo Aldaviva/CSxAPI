@@ -10,37 +10,29 @@
       },
       "DataSizeUnits": {
         "type": "Direct",
-        "requested": "[3.0.0-beta2, )",
-        "resolved": "3.0.0-beta2",
-        "contentHash": "w2/05gKkG1EGz4f6nPB2WXGQn9H9VIXN+ZICruOuKJ2UB/vhm5mOdp8IPFRshn8VGTSP/Q/QwIbFAuQszVo27A=="
+        "requested": "[4.0.0-beta.4, )",
+        "resolved": "4.0.0-beta.4",
+        "contentHash": "8bleQFXLI14zo2ty5tAiPk/DxN/xNfAdELW/khbjoIa69iceJhA7NVZShPqy53wokBYCFdyf1P5k+u6P16NEhA=="
       },
       "McMaster.Extensions.CommandLineUtils": {
         "type": "Direct",
-        "requested": "[4.1.1, )",
-        "resolved": "4.1.1",
-        "contentHash": "zxgDY+G5yVq2q8sVB3Z275Qkxed1jC95nwAfnlSyoG4l5Nicvd4+ke1jXusEZEfyuErlAgXCKS937c13FmZWBg==",
-        "dependencies": {
-          "System.ComponentModel.Annotations": "5.0.0"
-        }
+        "requested": "[5.1.0, )",
+        "resolved": "5.1.0",
+        "contentHash": "YceiKmxdsBrlkAJpmJ2N8XkLyAH01xLsm4VLfjNp5MvtAom2wflZtEBz3CLMQret6Z7jSh3oBO1ULF1Is0tNxA=="
       },
       "Unfucked.HTTP": {
         "type": "Direct",
-        "requested": "[0.0.1-beta.22, )",
-        "resolved": "0.0.1-beta.22",
-        "contentHash": "q6/22H0aX1M+plHpMqHd69TMg/p8Ekft+uW5QsPAK+jamiflNQqLLcQrQwZIH34j0CEk16/4jEDhILlCvEPpYA==",
+        "requested": "[0.0.1-beta.31, )",
+        "resolved": "0.0.1-beta.31",
+        "contentHash": "ui1dSqAk1ikK9Y2IRCFswYOx6mXVQEUqauz+kgbFDlvdnnsgmklxcSDywQiCl3ujSEAUachUqvW84jsbbHQYzA==",
         "dependencies": {
-          "Unfucked": "0.0.1-beta.29"
+          "Unfucked": "0.0.1-beta.47"
         }
-      },
-      "System.ComponentModel.Annotations": {
-        "type": "Transitive",
-        "resolved": "5.0.0",
-        "contentHash": "dMkqfy2el8A8/I76n2Hi1oBFEbG1SfxD2l5nhwXV3XjlnOmwxJlQbYpJH4W51odnU9sARCSAgv7S3CyAFMkpYg=="
       },
       "Unfucked": {
         "type": "Transitive",
-        "resolved": "0.0.1-beta.29",
-        "contentHash": "BwvicbiYbdSx5FJOorXfng+uidzpoCa49uLNPP6/X8bJHJA8gqbo6FvQruDYrXVX9395jPWPmcha2RjfYI2sGQ=="
+        "resolved": "0.0.1-beta.47",
+        "contentHash": "3Wg5ANX1FrAIKqZ+CYxWcP5zNr2WxPBqJxSndjXb9Zz4dkB2setxTAigdcaG0JLv1O4UrjhEcFgHLksmzH6VUQ=="
       }
     },
     "net10.0/linux-arm": {},

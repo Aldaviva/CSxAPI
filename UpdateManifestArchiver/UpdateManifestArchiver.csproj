@@ -25,9 +25,9 @@
 
     <ItemGroup>
         <PackageReference Include="Bom.Squad" Version="0.3.0" />
-        <PackageReference Include="DataSizeUnits" Version="3.0.0-beta2" />
-        <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
-        <PackageReference Include="Unfucked.HTTP" Version="0.0.1-beta.22" />
+        <PackageReference Include="DataSizeUnits" Version="4.0.0-beta.4" />
+        <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="5.1.0" />
+        <PackageReference Include="Unfucked.HTTP" Version="0.0.1-beta.31" />
     </ItemGroup>
 
 </Project>
